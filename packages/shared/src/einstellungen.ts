@@ -309,6 +309,13 @@ export const EINSTELLUNGEN = {
   "ablauf.dublettenFensterTage": def("ablauf", z.number().int().positive(), 14, "Zeitfenster, in dem gleiche Kunde+Fahrzeug als Dublette gilt."),
   "ablauf.berichtGueltigTage": def("ablauf", z.number().int().positive(), 7, "So lange gilt ein Bericht, danach muss neu bewertet werden."),
   "ablauf.listeSeitenGroesse": def("ablauf", z.number().int().positive().max(200), 25, "Anzahl Anfragen je Seite in der Admin-Liste.", { max: 200 }),
+  "ablauf.kennzahlenZeitraumTage": def("ablauf", z.number().int().positive().max(3650), 30, "Standardzeitraum der Kennzahlen, wenn die Anfrage keinen Zeitraum nennt.", { max: 3650 }),
+  "ablauf.kennzahlenKonfidenzGrenzen": def(
+    "ablauf",
+    z.array(z.number().gt(0).lt(1)).min(1).max(10).refine((a) => a.every((x, i) => i === 0 || x > a[i - 1]!), "Grenzen müssen aufsteigend sein."),
+    [0.5, 0.7, 0.85],
+    "Klassengrenzen (aufsteigend, 0–1) für die Konfidenzverteilung der Berichte in den Kennzahlen.",
+  ),
   "ablauf.statusBeschriftungen": def(
     "ablauf",
     z.record(z.string(), z.string()),
