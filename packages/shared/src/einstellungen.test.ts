@@ -6,6 +6,8 @@ const NEUE_SCHLUESSEL = [
   "antwort.automatischErlaubt",
   "ablauf.autopilot",
   "ablauf.eskalation",
+  "ablauf.nachholenNachMinuten",
+  "ablauf.nachholenMaxJeLauf",
   "ankauf.maxGesamtAbschlagProzent",
   "ankauf.mindestPreisEuro",
   "ankauf.maxSpanneProzent",

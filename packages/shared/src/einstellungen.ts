@@ -270,6 +270,14 @@ export const EINSTELLUNGEN = {
   "ablauf.freigabePflicht": def("ablauf", z.literal(true), true, "Jede Bewertung braucht die Freigabe eines Admins. Bewusst nicht abschaltbar."),
   "ablauf.maxRueckfragen": def("ablauf", z.number().int().min(0), 2, "Höchstzahl automatischer Rückfragen, danach geht die Anfrage an einen Menschen."),
   "ablauf.rueckfrageTimeoutStunden": def("ablauf", z.number().positive(), 48, "Ohne Antwort nach dieser Zeit geht die Anfrage an einen Menschen."),
+  "ablauf.nachholenNachMinuten": def(
+    "ablauf",
+    z.number().int().min(1),
+    5,
+    "Eine Anfrage im Status „eingegangen“ wird vom Cron erst nach dieser Zeit (ohne Änderung) neu eingereiht, damit laufende Jobs nicht doppelt starten.",
+    { max: 1440 },
+  ),
+  "ablauf.nachholenMaxJeLauf": def("ablauf", z.number().int().min(1), 50, "Höchstzahl Anfragen, die ein Cron-Lauf nachholt.", { max: 1000 }),
   "ablauf.dublettenFensterTage": def("ablauf", z.number().int().positive(), 14, "Zeitfenster, in dem gleiche Kunde+Fahrzeug als Dublette gilt."),
   "ablauf.berichtGueltigTage": def("ablauf", z.number().int().positive(), 7, "So lange gilt ein Bericht, danach muss neu bewertet werden."),
   "ablauf.statusBeschriftungen": def(
