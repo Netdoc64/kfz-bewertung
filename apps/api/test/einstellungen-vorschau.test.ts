@@ -89,4 +89,27 @@ describe("POST /api/admin/einstellungen/:schluessel/vorschau", () => {
     const unbekannt = await vorschau("gibt.es.nicht", { wert: 1 });
     expect(unbekannt.status).toBe(404);
   });
+
+  it("liefert Plausibilitätswarnungen mit, ohne die Vorschau zu verhindern", async () => {
+    const r = await vorschau("ankauf.mindestPreisEuro", { wert: 9000 });
+    expect(r.status).toBe(200);
+    const k = (await r.json()) as { warnungen: string[] };
+    expect(k.warnungen).toHaveLength(1);
+    const ruhig = await vorschau("ankauf.mindestPreisEuro", { wert: 300 });
+    expect(((await ruhig.json()) as { warnungen: string[] }).warnungen).toEqual([]);
+  });
+
+  it("Speichern liefert die Warnungen mit und speichert trotzdem", async () => {
+    const put = (wert: number, version: number) =>
+      app.request(
+        "http://lokal/api/admin/einstellungen/ankauf.mindestPreisEuro",
+        { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ wert, version }) },
+        env,
+      );
+    const r = await put(9000, 0);
+    expect(r.status).toBe(200);
+    const k = (await r.json()) as { wert: number; warnungen: string[] };
+    expect(k.wert).toBe(9000);
+    expect(k.warnungen).toHaveLength(1);
+  });
 });

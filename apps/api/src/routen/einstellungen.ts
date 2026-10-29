@@ -1,4 +1,4 @@
-import { istEinstellungsSchluessel } from "@kfz/shared";
+import { istEinstellungsSchluessel, plausibilitaetsWarnungen } from "@kfz/shared";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppUmgebung } from "../env.js";
@@ -50,7 +50,13 @@ export const einstellungenRouten = new Hono<AppUmgebung>()
     const neu = pruefeVorschauWert(k, p.data.wert ?? null);
     const anzahl = await e.lese("einstellungen.vorschauAnzahl");
     const zeilen = await rechneVorschau(e, k, neu, await ladeLetzteBerichte(c.env.DB, anzahl), new Date());
-    return c.json({ schluessel: k, anzahl: zeilen.length, geaendert: zeilen.filter((z) => z.geaendert).length, zeilen });
+    return c.json({
+      schluessel: k,
+      anzahl: zeilen.length,
+      geaendert: zeilen.filter((z) => z.geaendert).length,
+      warnungen: plausibilitaetsWarnungen(k, neu),
+      zeilen,
+    });
   })
   .put("/:schluessel", async (c) => {
     const k = schluessel(c.req.param("schluessel"));
@@ -59,5 +65,6 @@ export const einstellungenRouten = new Hono<AppUmgebung>()
       throw new AppFehler("EINGABE_UNGUELTIG", "Erwartet { wert, version }", { details: p.success ? undefined : p.error.issues });
     }
     const eintrag = await c.get("einstellungen").setze(k, p.data.wert ?? null, p.data.version, c.get("admin"));
-    return c.json(eintrag);
+    // Eine Warnung verhindert das Speichern nicht (A10), sie wird mitgeliefert.
+    return c.json({ ...eintrag, warnungen: plausibilitaetsWarnungen(k, eintrag.wert) });
   });
