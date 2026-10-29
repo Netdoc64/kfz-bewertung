@@ -27,7 +27,17 @@ Gesamtbild und Phasen: [PLAN.md](PLAN.md).
 
 - Die Bewertung läuft ohne KI. KI nur über den `KiAnschluss`-Port und nur für
   Auslesen/Formulieren — **nie** für den Preis.
-- Nichts geht ohne Admin-Freigabe an einen Kunden.
+- Kein Preis ohne Freigabe: Nachrichten ohne Preis (Eingang, Rückfrage,
+  Datenschutzhinweis) dürfen automatisch aus Vorlagen raus, alles mit Preis oder
+  Zusage erst nach Admin-Freigabe. Der Not-Aus `ablauf.autopilot` wird bei jedem
+  Versand geprüft.
+- Im Zweifel `an_mensch` mit Grund — nie raten, nie still scheitern.
+
+## Fertig heißt
+
+Jede Phase hat Fertig-Kriterien in [PLAN.md](PLAN.md). Eine Phase ist erst fertig,
+wenn alle abgehakt sind und `npm test`, `npm run typecheck` und
+`wrangler deploy --dry-run` grün laufen.
 
 ## Geheimnisse
 
