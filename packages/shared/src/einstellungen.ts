@@ -12,17 +12,41 @@ import { REGEL_FELDER } from "./fahrzeug.js";
  * Regeln: Schlüssel nie umbenennen, Typ nie ohne Migration ändern.
  */
 
-export type EinstellungsGruppe = "bewertung" | "ankauf" | "antwort" | "ablauf" | "quelle" | "ki" | "betrieb";
+export type EinstellungsGruppe =
+  | "bewertung"
+  | "ankauf"
+  | "antwort"
+  | "ablauf"
+  | "quelle"
+  | "ki"
+  | "betrieb"
+  | "eingang"
+  | "benachrichtigung"
+  | "bericht"
+  | "mail";
+
+/** Plausibler Bereich eines Zahlenwerts. Außerhalb: Warnung, kein Schemafehler. */
+export interface Plausibilitaet {
+  min?: number;
+  max?: number;
+}
 
 interface Definition<S extends z.ZodTypeAny> {
   schema: S;
   standard: z.infer<S>;
   gruppe: EinstellungsGruppe;
   beschreibung: string;
+  plausibel?: Plausibilitaet;
 }
 
-function def<S extends z.ZodTypeAny>(gruppe: EinstellungsGruppe, schema: S, standard: z.infer<S>, beschreibung: string): Definition<S> {
-  return { schema, standard, gruppe, beschreibung };
+function def<S extends z.ZodTypeAny>(
+  gruppe: EinstellungsGruppe,
+  schema: S,
+  standard: z.infer<S>,
+  beschreibung: string,
+  plausibel?: Plausibilitaet,
+): Definition<S> {
+  return plausibel ? { schema, standard, gruppe, beschreibung, plausibel } : { schema, standard, gruppe, beschreibung };
 }
 
 // --- Teilschemas -----------------------------------------------------------
@@ -64,6 +88,41 @@ export type SuchStufe = z.infer<typeof SuchStufeSchema>;
 /** Vorlagen je Sprache und Anlass. Platzhalter: {{name}}. */
 export const VorlagenSchema = z.record(z.string().min(2), z.record(z.string(), z.string()));
 
+export const AnlassSchema = z.enum(["eingang", "rueckfrage", "datenschutz"]);
+/** Leer = nicht konfiguriert. */
+export const MailAdresseSchema = z.union([z.literal(""), z.string().email()]);
+
+export const EskalationSchema = z.object({
+  /** Konfidenz (0–1) unter dieser Schwelle → Mensch. */
+  konfidenzMin: z.number().min(0).max(1),
+  /** Ankaufspreis über diesem Betrag → Mensch. */
+  maxAnkaufEuro: z.number().positive(),
+  /** Fahrzeugklassen, die nie automatisch bewertet werden. */
+  ausgeschlosseneKlassen: z.array(z.string().min(1)),
+  /** KI-Einordnung „sonstiges“ geht an einen Menschen. */
+  sonstigesAnMensch: z.boolean(),
+});
+
+export const CronAufgabenSchema = z.object({
+  rueckfrageTimeout: z.boolean(),
+  freigabeErinnerung: z.boolean(),
+  berichtsablauf: z.boolean(),
+  dsgvoLoeschung: z.boolean(),
+  fehlerAufraeumen: z.boolean(),
+  referenzAbgleich: z.boolean(),
+});
+
+/** HTML-Berichtsvorlage je Sprache. Platzhalter in {{doppelten Klammern}}. */
+export const BerichtVorlagenSchema = z.record(
+  z.string().min(2),
+  z.object({
+    betreff: z.string().min(1),
+    html: z.string().min(1),
+    /** „Kein Gutachten“ — steht in jedem Bericht. */
+    hinweis: z.string().min(1),
+  }),
+);
+
 // --- Registry --------------------------------------------------------------
 
 export const EINSTELLUNGEN = {
@@ -100,6 +159,21 @@ export const EINSTELLUNGEN = {
   "ankauf.standkostenEuroJeTag": def("ankauf", z.number().nonnegative(), 15, "Kosten je Standtag bis zum Weiterverkauf."),
   "ankauf.erwarteteStandtage": def("ankauf", z.number().int().nonnegative(), 30, "Erwartete Standtage, wenn die Vergleichsdaten keine liefern."),
   "ankauf.spanneProzent": def("ankauf", z.number().min(0).max(50), 5, "Verhandlungsspanne um den Ankaufspreis (von/bis im Angebot)."),
+  "ankauf.maxGesamtAbschlagProzent": def(
+    "ankauf",
+    z.number().min(0).max(100),
+    30,
+    "Deckel für die Summe aller Regelabschläge in Prozent des Verkaufspreises.",
+    { max: 50 },
+  ),
+  "ankauf.mindestPreisEuro": def("ankauf", z.number().nonnegative(), 300, "Kein Ankaufsangebot unter diesem Preis; darunter geht die Anfrage an einen Menschen.", { max: 5000 }),
+  "ankauf.maxSpanneProzent": def(
+    "ankauf",
+    z.number().min(0).max(100),
+    25,
+    "Größte zulässige Spanne zwischen erwartetem Verkaufspreis und Ankaufspreis in Prozent.",
+    { max: 40 },
+  ),
   "ankauf.regeln": def(
     "ankauf",
     z.array(AnkaufRegelSchema),
@@ -160,6 +234,8 @@ export const EINSTELLUNGEN = {
         angebot: "Hallo {{name}}, für Ihren {{fahrzeug}} können wir {{ankaufVon}} bis {{ankaufBis}} anbieten. Das Angebot gilt bis {{gueltigBis}}.",
         absage: "Hallo {{name}}, leider können wir Ihnen für den {{fahrzeug}} derzeit kein Angebot machen.",
         hinweis: "Marktwerteinschätzung auf Basis vergleichbarer Inserate, kein Gutachten.",
+        datenschutz:
+          "Hinweis zum Datenschutz: Wir verarbeiten Ihre Angaben ausschließlich zur Bewertung Ihres Fahrzeugs. Auf Anfrage löschen wir Ihre Daten jederzeit.",
       },
     },
     "Antwortvorlagen je Sprache und Anlass. Platzhalter in {{doppelten Klammern}}.",
@@ -171,7 +247,26 @@ export const EINSTELLUNGEN = {
     "Angaben, ohne die keine Bewertung startet; fehlen sie, wird nachgefragt.",
   ),
 
+  "antwort.automatischErlaubt": def(
+    "antwort",
+    z.array(AnlassSchema),
+    ["eingang", "rueckfrage", "datenschutz"],
+    "Anlässe ohne Preis, für die Nachrichten ohne Admin-Freigabe aus Vorlagen rausgehen. Alles mit Preis braucht Freigabe.",
+  ),
+
   // Ablauf
+  "ablauf.autopilot": def(
+    "ablauf",
+    z.enum(["an", "nur_verarbeiten", "aus"]),
+    "an",
+    "Not-Aus: an = normal, nur_verarbeiten = bewerten, aber nichts senden, aus = Eingänge annehmen und parken.",
+  ),
+  "ablauf.eskalation": def(
+    "ablauf",
+    EskalationSchema,
+    { konfidenzMin: 0.5, maxAnkaufEuro: 30000, ausgeschlosseneKlassen: ["oldtimer", "nutzfahrzeug"], sonstigesAnMensch: true },
+    "Wann das System nicht allein entscheidet: Konfidenz unter Schwelle, Ankaufspreis über Betrag, ausgeschlossene Fahrzeugklasse, KI-Einordnung „sonstiges“.",
+  ),
   "ablauf.freigabePflicht": def("ablauf", z.literal(true), true, "Jede Bewertung braucht die Freigabe eines Admins. Bewusst nicht abschaltbar."),
   "ablauf.maxRueckfragen": def("ablauf", z.number().int().min(0), 2, "Höchstzahl automatischer Rückfragen, danach geht die Anfrage an einen Menschen."),
   "ablauf.rueckfrageTimeoutStunden": def("ablauf", z.number().positive(), 48, "Ohne Antwort nach dieser Zeit geht die Anfrage an einen Menschen."),
@@ -203,6 +298,7 @@ export const EINSTELLUNGEN = {
   "quelle.mobilede.modus": def("quelle", z.enum(["mock", "live"]), "mock", "mock = Beispieldaten, live = echte mobile.de-Search-API."),
   "quelle.cacheMinuten": def("quelle", z.number().int().nonnegative(), 360, "Gleiche Suchanfragen werden so lange aus dem Cache bedient."),
   "quelle.zeitlimitMs": def("quelle", z.number().int().positive(), 10000, "Zeitlimit je Anfrage an die Datenquelle."),
+  "quelle.referenzAbgleichStunden": def("quelle", z.number().int().positive(), 24, "Abstand des Abgleichs der mobile.de-Marken-/Modell-IDs."),
   "quelle.maxVersuche": def("quelle", z.number().int().min(1), 4, "Versuche je Bewertungsjob, bevor er in die Dead-Letter-Queue geht."),
 
   // KI
@@ -218,8 +314,66 @@ export const EINSTELLUNGEN = {
   // Betrieb
   "betrieb.fehlerSpeichernAbSchwere": def("betrieb", z.enum(["info", "warnung", "fehler", "kritisch"]), "warnung", "Ab dieser Schwere landet ein Fehler im Fehlerspeicher."),
   "betrieb.alarmAbSchwere":def("betrieb", z.enum(["info", "warnung", "fehler", "kritisch"]), "kritisch", "Ab dieser Schwere wird ein Alarm ausgelöst."),
+  "betrieb.alarmKanal": def("betrieb", z.enum(["email", "whatsapp", "aus"]), "email", "Kanal für Alarme bei Fehlern ab `betrieb.alarmAbSchwere`."),
+  "betrieb.alarmRuheMinuten": def(
+    "betrieb",
+    z.number().int().nonnegative(),
+    60,
+    "Gleicher Fehlerfingerabdruck alarmiert höchstens einmal in diesem Zeitfenster.",
+    { max: 1440 },
+  ),
+  "betrieb.cronAufgaben": def(
+    "betrieb",
+    CronAufgabenSchema,
+    { rueckfrageTimeout: true, freigabeErinnerung: true, berichtsablauf: true, dsgvoLoeschung: true, fehlerAufraeumen: true, referenzAbgleich: true },
+    "Zeitgesteuerte Aufgaben einzeln an/aus.",
+  ),
+  "betrieb.deadLetterAlarmAb": def("betrieb", z.number().int().min(1), 1, "Ab so vielen Einträgen in der Dead-Letter-Queue wird alarmiert.", { max: 100 }),
+  "einstellungen.vorschauAnzahl": def(
+    "betrieb",
+    z.number().int().min(0),
+    10,
+    "Wie viele der letzten Berichte eine Einstellungsänderung zur Vorschau neu rechnen.",
+    { max: 100 },
+  ),
   "betrieb.fehlerAufbewahrungTage": def("betrieb", z.number().int().positive(), 90, "Fehlereinträge werden nach dieser Zeit gelöscht."),
   "betrieb.personendatenAufbewahrungTage": def("betrieb", z.number().int().positive(), 365, "Kundendaten abgeschlossener Anfragen werden danach gelöscht (DSGVO)."),
+
+  // Eingang
+  "eingang.maxJeAbsenderUndTag": def(
+    "eingang",
+    z.number().int().min(1),
+    5,
+    "Höchstzahl Anfragen je Absender und Tag; darüber wird geparkt und der Admin informiert.",
+    { max: 50 },
+  ),
+
+  // Benachrichtigung der Admins
+  "benachrichtigung.kanal": def("benachrichtigung", z.enum(["email", "whatsapp", "aus"]), "email", "Kanal, über den Admins von offenen Freigaben erfahren."),
+  "benachrichtigung.erinnerungNachStunden": def("benachrichtigung", z.number().positive(), 4, "Erinnerung, wenn eine Freigabe so lange offen ist.", { max: 72 }),
+  "benachrichtigung.eskalationNachStunden": def("benachrichtigung", z.number().positive(), 24, "Eskalation, wenn eine Freigabe so lange offen ist.", { max: 168 }),
+
+  // Bericht
+  "bericht.vorlagen": def(
+    "bericht",
+    BerichtVorlagenSchema,
+    {
+      de: {
+        betreff: "Ihre Fahrzeugbewertung: {{fahrzeug}}",
+        html:
+          "<h1>Fahrzeugbewertung</h1><p>{{fahrzeug}}</p>" +
+          "<p>Ankaufspreis: {{ankaufVon}} bis {{ankaufBis}}</p>" +
+          "<p>Gültig bis {{gueltigBis}}.</p><p><small>{{hinweis}}</small></p>",
+        hinweis: "Marktwerteinschätzung auf Basis vergleichbarer Inserate, kein Gutachten.",
+      },
+    },
+    "HTML-Berichtsvorlage je Sprache, inklusive Hinweis „kein Gutachten“.",
+  ),
+
+  // Mail (Adressen, keine Geheimnisse; leer = nicht konfiguriert)
+  "mail.absenderAdresse": def("mail", MailAdresseSchema, "", "Absenderadresse für ausgehende Mails."),
+  "mail.eingangsAdresse": def("mail", MailAdresseSchema, "", "Adresse, an die Kunden Anfragen mailen (E-Mail-Eingang)."),
+  "mail.adminEmpfaenger": def("mail", z.array(z.string().email()), [], "Empfänger für Freigabe-Benachrichtigungen und Alarme."),
 } as const;
 
 export type EinstellungsSchluessel = keyof typeof EINSTELLUNGEN;
@@ -230,3 +384,16 @@ export function istEinstellungsSchluessel(s: string): s is EinstellungsSchluesse
 }
 
 export const EINSTELLUNGS_SCHLUESSEL = Object.keys(EINSTELLUNGEN) as EinstellungsSchluessel[];
+
+/**
+ * Plausibilitätswarnungen für einen Wert (A10). Greift nur bei Zahlen und nur,
+ * wenn der Schlüssel Grenzen hat. Eine Warnung verhindert das Speichern nicht.
+ */
+export function plausibilitaetsWarnungen(schluessel: EinstellungsSchluessel, wert: unknown): string[] {
+  const grenzen = (EINSTELLUNGEN[schluessel] as { plausibel?: Plausibilitaet }).plausibel;
+  if (!grenzen || typeof wert !== "number") return [];
+  const warnungen: string[] = [];
+  if (grenzen.min !== undefined && wert < grenzen.min) warnungen.push(`${schluessel}: ${wert} liegt unter dem üblichen Bereich (ab ${grenzen.min}).`);
+  if (grenzen.max !== undefined && wert > grenzen.max) warnungen.push(`${schluessel}: ${wert} liegt über dem üblichen Bereich (bis ${grenzen.max}).`);
+  return warnungen;
+}
