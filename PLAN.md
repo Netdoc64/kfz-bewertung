@@ -146,7 +146,8 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 - [ ] Regel-Engine für `ankauf.regeln` mit allen Operatoren, Deckel aus A7
 - [x] Goldene Testfälle: fester Datensatz + Einstellungen → exakt erwartete Preise
 - [x] Bericht als HTML (Vorlagen aus Einstellungen), gespeichert mit Abdruck
-- [ ] Admin-Web-App: Liste, Detail, Freigabe-Aktionen, Einstellungen bearbeiten mit Vorschau (A10), Fehlerliste
+- [x] Admin-Web-App (`apps/admin`): Liste mit Statusfilter und Seiten, Detail mit Bericht/Ereignissen/Nachrichten, Freigabe-Aktionen mit Version und Neuladen bei `VERSION_KONFLIKT`
+- [ ] Admin-Web-App: Einstellungen bearbeiten mit Vorschau (A10), Fehlerliste
 - [ ] Ende-zu-Ende-Test: Anfrage → `zur_freigabe` → `freigegeben` → `angebot_versendet` (Versand gemockt)
 - [ ] Not-Aus (A2) im Ende-zu-Ende-Test geprüft: bei `aus` geht nichts raus
 
