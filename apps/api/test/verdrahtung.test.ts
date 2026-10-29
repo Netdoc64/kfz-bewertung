@@ -33,7 +33,7 @@ describe("Verdrahtung", () => {
     await expect(worker.queue!(batch, env, ctx)).resolves.toBeUndefined();
     expect(bestaetigt).toBe(true);
     await expect(worker.scheduled!({ cron: "*/15 * * * *", scheduledTime: 0, type: "scheduled", noRetry() {} } as ScheduledController, env, ctx)).resolves.toBeUndefined();
-    await expect(worker.email!({} as ForwardableEmailMessage, env, ctx)).resolves.toBeUndefined();
+    await expect(worker.email!({ headers: new Headers(), from: "kunde@example.com" } as ForwardableEmailMessage, env, ctx)).resolves.toBeUndefined();
   });
 
   it("Vergleichsinserat-Schema nimmt ein gültiges Inserat an", () => {

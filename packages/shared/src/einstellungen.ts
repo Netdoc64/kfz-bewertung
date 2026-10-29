@@ -379,6 +379,7 @@ export const EINSTELLUNGEN = {
   // Mail (Adressen, keine Geheimnisse; leer = nicht konfiguriert)
   "mail.absenderAdresse": def("mail", MailAdresseSchema, "", "Absenderadresse für ausgehende Mails."),
   "mail.eingangsAdresse": def("mail", MailAdresseSchema, "", "Adresse, an die Kunden Anfragen mailen (E-Mail-Eingang)."),
+  "mail.eigeneAdressen": def("mail", z.array(z.string().email()), [], "Weitere eigene Absenderadressen; Mails von hier (und von mail.absenderAdresse) werden als Schleife verworfen."),
   "mail.adminEmpfaenger": def("mail", z.array(z.string().email()), [], "Empfänger für Freigabe-Benachrichtigungen und Alarme."),
 } as const;
 

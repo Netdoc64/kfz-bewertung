@@ -21,6 +21,7 @@ const NEUE_SCHLUESSEL = [
   "bericht.vorlagen",
   "mail.absenderAdresse",
   "mail.eingangsAdresse",
+  "mail.eigeneAdressen",
   "mail.adminEmpfaenger",
   "quelle.referenzAbgleichStunden",
 ];
