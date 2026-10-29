@@ -126,7 +126,7 @@ describe("Sonstiges", () => {
 
   it("fehlender Platzhalterwert sendet nichts", async () => {
     const k = new MockKanal();
-    expect(await fehlerCode(sende(env.DB, einst(), { ...auftrag(k, "eingang"), werte: {} }))).toBe("VERSAND_FEHLGESCHLAGEN");
+    expect(await fehlerCode(sende(env.DB, einst(), { ...auftrag(k, "eingang"), werte: {} }))).toBe("VERSAND_VORLAGE_FEHLT");
     expect(k.gesendet).toHaveLength(0);
   });
 });

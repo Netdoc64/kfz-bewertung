@@ -58,6 +58,7 @@ export const FEHLER = {
   AUTOPILOT_GESPERRT: { status: 423, schwere: "info", wiederholbar: false, text: "Der automatische Betrieb ist gerade angehalten." },
   FREIGABE_FEHLT: { status: 403, schwere: "warnung", wiederholbar: false, text: "Für diese Nachricht fehlt die Freigabe eines Admins." },
   VERSAND_FEHLGESCHLAGEN: { status: 502, schwere: "fehler", wiederholbar: true, text: "Die Nachricht konnte nicht versendet werden." },
+  VERSAND_VORLAGE_FEHLT: { status: 500, schwere: "fehler", wiederholbar: false, text: "Für diese Nachricht fehlt eine Vorlage oder ein Wert für einen Platzhalter." },
   ZU_VIELE_ANFRAGEN: { status: 429, schwere: "warnung", wiederholbar: false, text: "Zu viele Anfragen von diesem Absender. Bitte später erneut versuchen." },
   PLAUSIBILITAET_VERLETZT: { status: 422, schwere: "warnung", wiederholbar: false, text: "Das Ergebnis liegt außerhalb der zulässigen Grenzen und wird von einem Menschen geprüft." },
   JOB_VERALTET: { status: 409, schwere: "info", wiederholbar: false, text: "Die Anfrage hat sich geändert; die Bewertung wird neu gestartet." },
