@@ -138,8 +138,8 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 ### Phase 1 — Durchstich Anfrage → Bericht (mit Mock-Daten)
 
 - [ ] Autonomie-Einstellungen A1, A2, A6, A7, A9, A10 in der Registry, mit Tests
-- [ ] Anfrage anlegen über Formular-API und Admin; Pflichtangaben-Prüfung → `unvollstaendig`
-- [ ] Dublettenerkennung im Zeitfenster
+- [x] Anfrage anlegen über Formular-API und Admin; Pflichtangaben-Prüfung → `unvollstaendig`
+- [x] Dublettenerkennung im Zeitfenster
 - [ ] Bewertungs-Job über Queue, idempotent, mit Job-Generation (A8)
 - [ ] Mock-mobile.de-Adapter mit festen Beispieldaten (≥ 3 Fahrzeugsegmente)
 - [x] Bewertungskern: Suchstufen, Filter, IQR, Median, km/Alter-Korrektur, Konfidenz

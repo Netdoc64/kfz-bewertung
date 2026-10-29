@@ -1,0 +1,248 @@
+import { env } from "cloudflare:test";
+import { beforeEach, describe, expect, it } from "vitest";
+import { app } from "../src/index.js";
+
+interface Mail {
+  to: string;
+  subject: string;
+  text: string;
+}
+let jobs: unknown[];
+let mails: Mail[];
+
+const testEnv = () => ({
+  ...env,
+  BEWERTUNG_QUEUE: { send: async (j: unknown) => void jobs.push(j) } as unknown as Queue<unknown>,
+  EMAIL: { send: async (m: Mail) => void mails.push(m) } as unknown as SendEmail,
+});
+
+function post(pfad: string, body: unknown) {
+  return app.request(`http://lokal${pfad}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, testEnv());
+}
+
+async function setze(schluessel: string, wert: unknown) {
+  await env.DB.prepare("INSERT OR REPLACE INTO einstellungen (schluessel, wert, version, geaendert_von) VALUES (?1, ?2, 1, 'test')")
+    .bind(schluessel, JSON.stringify(wert))
+    .run();
+}
+
+const vollstaendig = { marke: "VW", modell: "Golf", erstzulassung: "2019-05", kilometer: 80000, kraftstoff: "benzin" };
+const eingabe = (extra: Record<string, unknown> = {}, fahrzeug: Record<string, unknown> = vollstaendig) => ({
+  name: "Anna",
+  kontakt: "anna@example.de",
+  fahrzeug,
+  ...extra,
+});
+const zeile = (id: string) => env.DB.prepare("SELECT * FROM anfragen WHERE id = ?1").bind(id).first<Record<string, unknown>>();
+const ereignisse = async (id: string) =>
+  (await env.DB.prepare("SELECT aktion, status_von, status_nach, durch FROM anfrage_ereignisse WHERE anfrage_id = ?1 ORDER BY id").bind(id).all()).results;
+const code = async (r: Response) => ((await r.json()) as { fehler: { code: string } }).fehler.code;
+
+beforeEach(async () => {
+  jobs = [];
+  mails = [];
+  await env.DB.exec(
+    "DELETE FROM nachrichten; DELETE FROM anfrage_nachrichten; DELETE FROM eingang_geparkt; DELETE FROM anfrage_ereignisse; DELETE FROM berichte; DELETE FROM anfragen; DELETE FROM einstellungen; DELETE FROM fehler_ereignisse;",
+  );
+  await setze("mail.absenderAdresse", "ankauf@example.de");
+});
+
+describe("Anfrage anlegen", () => {
+  it("Formular: vollständige Angaben → eingegangen, Ereignis, Job der Generation 1", async () => {
+    const r = await post("/api/anfragen", eingabe());
+    expect(r.status).toBe(201);
+    const b = (await r.json()) as { id: string; status: string };
+    expect(b.status).toBe("eingegangen");
+    expect(await ereignisse(b.id)).toEqual([{ aktion: "angelegt", status_von: null, status_nach: "eingegangen", durch: "system" }]);
+    expect(jobs).toEqual([expect.objectContaining({ art: "bewertung", anfrageId: b.id, generation: 1 })]);
+    expect(mails).toHaveLength(0);
+  });
+
+  it("Admin: kanal admin, Ereignis mit Admin-Kennung", async () => {
+    const r = await post("/api/admin/anfragen", eingabe());
+    expect(r.status).toBe(201);
+    const { id } = (await r.json()) as { id: string };
+    expect((await zeile(id))!.kanal).toBe("admin");
+    expect((await ereignisse(id))[0]).toMatchObject({ aktion: "angelegt", durch: "entwicklung@lokal" });
+    expect(jobs).toHaveLength(1);
+  });
+
+  it("ungültige Eingabe → EINGABE_UNGUELTIG, nichts gespeichert", async () => {
+    const r = await post("/api/anfragen", { name: "A", kontakt: "a@b.de", fahrzeug: { marke: "VW" } });
+    expect(r.status).toBe(400);
+    expect(await code(r)).toBe("EINGABE_UNGUELTIG");
+    expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM anfragen").first<{ n: number }>())!.n).toBe(0);
+  });
+});
+
+describe("Pflichtangaben und Rückfragen", () => {
+  const luecke = { marke: "VW", modell: "Golf", kraftstoff: "benzin" };
+
+  it("fehlende Angaben → unvollstaendig, Rückfrage per Mail, kein Job", async () => {
+    const r = await post("/api/anfragen", eingabe({}, luecke));
+    const b = (await r.json()) as { id: string; status: string };
+    expect(b.status).toBe("unvollstaendig");
+    expect(jobs).toHaveLength(0);
+    expect(mails).toHaveLength(1);
+    expect(mails[0]!.to).toBe("anna@example.de");
+    expect(mails[0]!.text).toContain("erstzulassung, kilometer");
+    expect((await zeile(b.id))!.rueckfragen).toBe(1);
+    expect((await ereignisse(b.id)).map((e) => e.aktion)).toEqual(["angelegt", "angaben_fehlen"]);
+  });
+
+  it("Pflichtangaben kommen aus der Einstellung", async () => {
+    await setze("antwort.pflichtangaben", ["getriebe"]);
+    const r = await post("/api/anfragen", eingabe({}, luecke));
+    expect(((await r.json()) as { status: string }).status).toBe("unvollstaendig");
+    expect(mails[0]!.text).toContain("getriebe");
+  });
+
+  it("Antwort mit den Angaben → eingegangen, Job mit höherer Generation", async () => {
+    const { id } = (await (await post("/api/anfragen", eingabe({}, luecke))).json()) as { id: string };
+    const r = await post(`/api/admin/anfragen/${id}/nachrichten`, { text: "Hier die Daten", fahrzeug: { erstzulassung: "2018-01", kilometer: 90000 } });
+    expect(r.status).toBe(200);
+    expect(((await r.json()) as { status: string }).status).toBe("eingegangen");
+    expect(jobs).toEqual([expect.objectContaining({ anfrageId: id, generation: 2 })]);
+    expect((await ereignisse(id)).map((e) => e.aktion)).toEqual(["angelegt", "angaben_fehlen", "angaben_ergaenzt"]);
+    expect(JSON.parse((await zeile(id))!.fahrzeug as string)).toMatchObject({ marke: "VW", kilometer: 90000, kraftstoff: "benzin" });
+  });
+
+  it("nach ablauf.maxRueckfragen → an_mensch statt weiterer Rückfrage", async () => {
+    const { id } = (await (await post("/api/anfragen", eingabe({}, luecke))).json()) as { id: string };
+    await post(`/api/admin/anfragen/${id}/nachrichten`, { text: "weiß nicht" });
+    expect(mails).toHaveLength(2);
+    const r = await post(`/api/admin/anfragen/${id}/nachrichten`, { text: "immer noch nicht" });
+    expect(((await r.json()) as { status: string }).status).toBe("an_mensch");
+    expect(mails).toHaveLength(2);
+    expect((await ereignisse(id)).at(-1)).toMatchObject({ aktion: "uebergeben", status_nach: "an_mensch", durch: "system" });
+  });
+
+  it("maxRueckfragen 0 → sofort an_mensch, keine Mail", async () => {
+    await setze("ablauf.maxRueckfragen", 0);
+    const b = (await (await post("/api/anfragen", eingabe({}, luecke))).json()) as { status: string };
+    expect(b.status).toBe("an_mensch");
+    expect(mails).toHaveLength(0);
+  });
+
+  it("Kontakt ohne Mailadresse → an_mensch mit Grund, nie still", async () => {
+    const b = (await (await post("/api/anfragen", eingabe({ kontakt: "+491701234567" }, luecke))).json()) as { id: string; status: string };
+    expect(b.status).toBe("an_mensch");
+    const e = await env.DB.prepare("SELECT notiz FROM anfrage_ereignisse WHERE anfrage_id = ?1 AND aktion = 'uebergeben'").bind(b.id).first<{ notiz: string }>();
+    expect(e!.notiz).toBeTruthy();
+  });
+
+  it("Not-Aus aus: Rückfrage wird geparkt statt gesendet", async () => {
+    await setze("ablauf.autopilot", "aus");
+    const b = (await (await post("/api/anfragen", eingabe({}, luecke))).json()) as { status: string };
+    expect(b.status).toBe("unvollstaendig");
+    expect(mails).toHaveLength(0);
+    const n = await env.DB.prepare("SELECT status FROM nachrichten WHERE anlass = 'rueckfrage'").first<{ status: string }>();
+    expect(n!.status).toBe("geparkt");
+  });
+
+  it("Not-Aus aus: Anfrage angenommen, aber nicht eingereiht", async () => {
+    await setze("ablauf.autopilot", "aus");
+    const r = await post("/api/anfragen", eingabe());
+    expect(r.status).toBe(201);
+    expect(jobs).toHaveLength(0);
+  });
+});
+
+describe("A8: Nachricht während der Bewertung", () => {
+  it("erhöht die Generation und reiht neu ein; Nachricht gespeichert", async () => {
+    const { id } = (await (await post("/api/anfragen", eingabe())).json()) as { id: string };
+    await env.DB.prepare("UPDATE anfragen SET status = 'in_bewertung' WHERE id = ?1").bind(id).run();
+    const r = await post(`/api/admin/anfragen/${id}/nachrichten`, { text: "Übrigens: 5 Reifen neu" });
+    expect(r.status).toBe(200);
+    expect((await zeile(id))!.generation).toBe(2);
+    expect(jobs.map((j) => (j as { generation: number }).generation)).toEqual([1, 2]);
+    const n = await env.DB.prepare("SELECT text, generation FROM anfrage_nachrichten WHERE anfrage_id = ?1").bind(id).all();
+    expect(n.results).toEqual([{ text: "Übrigens: 5 Reifen neu", generation: 2 }]);
+  });
+
+  it("nach der Freigabe-Stufe bleibt die Generation, kein neuer Job", async () => {
+    const { id } = (await (await post("/api/anfragen", eingabe())).json()) as { id: string };
+    await env.DB.prepare("UPDATE anfragen SET status = 'zur_freigabe' WHERE id = ?1").bind(id).run();
+    await post(`/api/admin/anfragen/${id}/nachrichten`, { text: "Hallo?" });
+    expect((await zeile(id))!.generation).toBe(1);
+    expect(jobs).toHaveLength(1);
+  });
+
+  it("unbekannte Anfrage → NICHT_GEFUNDEN", async () => {
+    const r = await post("/api/admin/anfragen/gibtsnicht/nachrichten", { text: "x" });
+    expect(r.status).toBe(404);
+  });
+});
+
+describe("Dubletten", () => {
+  const mitFin = (extra = {}) => eingabe(extra, { ...vollstaendig, fin: "WVWZZZ1KZAW123456" });
+
+  it("gleicher Kunde + FIN im Fenster → DUBLETTE", async () => {
+    expect((await post("/api/anfragen", mitFin())).status).toBe(201);
+    const r = await post("/api/anfragen", mitFin({ kontakt: "ANNA@example.de" }));
+    expect(r.status).toBe(409);
+    expect(await code(r)).toBe("DUBLETTE");
+    expect(jobs).toHaveLength(1);
+  });
+
+  it("Kennzeichen zählt, Schreibweise egal", async () => {
+    await post("/api/anfragen", eingabe({ kennzeichen: "B-AB 123" }));
+    const r = await post("/api/anfragen", eingabe({ kennzeichen: "b ab123" }));
+    expect(await code(r)).toBe("DUBLETTE");
+  });
+
+  it("anderer Kunde, gleiche FIN → keine Dublette", async () => {
+    await post("/api/anfragen", mitFin());
+    expect((await post("/api/anfragen", mitFin({ kontakt: "bernd@example.de" }))).status).toBe(201);
+  });
+
+  it("außerhalb von ablauf.dublettenFensterTage → keine Dublette", async () => {
+    const { id } = (await (await post("/api/anfragen", mitFin())).json()) as { id: string };
+    await env.DB.prepare("UPDATE anfragen SET erstellt_am = strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-10 days') WHERE id = ?1").bind(id).run();
+    await setze("ablauf.dublettenFensterTage", 7);
+    expect((await post("/api/anfragen", mitFin())).status).toBe(201);
+  });
+
+  it("innerhalb des Fensters nach Verkürzen der Einstellung noch Dublette", async () => {
+    const { id } = (await (await post("/api/anfragen", mitFin())).json()) as { id: string };
+    await env.DB.prepare("UPDATE anfragen SET erstellt_am = strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-10 days') WHERE id = ?1").bind(id).run();
+    expect(await code(await post("/api/anfragen", mitFin()))).toBe("DUBLETTE");
+  });
+});
+
+describe("A9: Flutschutz", () => {
+  it("über eingang.maxJeAbsenderUndTag wird geparkt, Fehler gespeichert, kein Job", async () => {
+    await setze("eingang.maxJeAbsenderUndTag", 2);
+    for (let i = 0; i < 2; i++) expect((await post("/api/anfragen", eingabe())).status).toBe(201);
+    const r = await post("/api/anfragen", eingabe());
+    expect(r.status).toBe(202);
+    expect(jobs).toHaveLength(2);
+    expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM anfragen").first<{ n: number }>())!.n).toBe(2);
+    const g = await env.DB.prepare("SELECT kontakt, grund FROM eingang_geparkt").all();
+    expect(g.results).toEqual([{ kontakt: "anna@example.de", grund: "flutschutz" }]);
+    const f = await env.DB.prepare("SELECT code FROM fehler_ereignisse").all();
+    expect(f.results).toEqual([{ code: "ZU_VIELE_ANFRAGEN" }]);
+  });
+
+  it("geparkte Eingänge zählen weiter mit; anderer Absender ist nicht betroffen", async () => {
+    await setze("eingang.maxJeAbsenderUndTag", 1);
+    await post("/api/anfragen", eingabe());
+    await post("/api/anfragen", eingabe());
+    await post("/api/anfragen", eingabe());
+    expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM eingang_geparkt").first<{ n: number }>())!.n).toBe(2);
+    expect((await post("/api/anfragen", eingabe({ kontakt: "bernd@example.de" }))).status).toBe(201);
+  });
+
+  it("Anfragen von gestern zählen nicht", async () => {
+    await setze("eingang.maxJeAbsenderUndTag", 1);
+    const { id } = (await (await post("/api/anfragen", eingabe())).json()) as { id: string };
+    await env.DB.prepare("UPDATE anfragen SET erstellt_am = strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 days') WHERE id = ?1").bind(id).run();
+    expect((await post("/api/anfragen", eingabe())).status).toBe(201);
+  });
+
+  it("Admin ist vom Flutschutz ausgenommen", async () => {
+    await setze("eingang.maxJeAbsenderUndTag", 1);
+    await post("/api/admin/anfragen", eingabe());
+    expect((await post("/api/admin/anfragen", eingabe())).status).toBe(201);
+  });
+});
