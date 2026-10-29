@@ -246,3 +246,58 @@ describe("A9: Flutschutz", () => {
     expect((await post("/api/admin/anfragen", eingabe())).status).toBe(201);
   });
 });
+
+describe("Admin-Ansicht geparkter Eingänge", () => {
+  const admin = (pfad: string, method = "GET") => app.request(`http://lokal/api/admin/geparkt${pfad}`, { method }, testEnv());
+
+  async function parke(): Promise<string> {
+    await setze("eingang.maxJeAbsenderUndTag", 1);
+    await post("/api/anfragen", eingabe());
+    await post("/api/anfragen", eingabe({}, { ...vollstaendig, modell: "Polo" }));
+    const l = (await (await admin("")).json()) as { eintraege: { id: string }[] };
+    return l.eintraege[0]!.id;
+  }
+
+  it("listet offene Eingänge mit Nutzlast, prüfen setzt nur das Kennzeichen", async () => {
+    const id = await parke();
+    const g = (await (await admin(`/${id}`)).json()) as { nutzlast: { name: string }; geprueft_am: string | null };
+    expect(g.nutzlast.name).toBe("Anna");
+    expect(g.geprueft_am).toBeNull();
+    const p = (await (await admin(`/${id}/pruefen`, "POST")).json()) as { geprueft_am: string | null; entscheidung: string | null };
+    expect(p.geprueft_am).not.toBeNull();
+    expect(p.entscheidung).toBeNull();
+    const ungeprueft = (await (await admin("?ungeprueft=1")).json()) as { eintraege: unknown[] };
+    expect(ungeprueft.eintraege).toHaveLength(0);
+  });
+
+  it("freigeben legt die Anfrage an und reiht ein; zweites Mal abgewiesen", async () => {
+    const id = await parke();
+    const vorher = jobs.length;
+    const r = await admin(`/${id}/freigeben`, "POST");
+    expect(r.status).toBe(201);
+    const a = (await r.json()) as { id: string };
+    expect(jobs.length).toBe(vorher + 1);
+    const z = await env.DB.prepare("SELECT entscheidung, anfrage_id FROM eingang_geparkt WHERE id = ?1").bind(id).first();
+    expect(z).toEqual({ entscheidung: "freigegeben", anfrage_id: a.id });
+    expect(await code(await admin(`/${id}/freigeben`, "POST"))).toBe("STATUSWECHSEL_UNZULAESSIG");
+    expect(((await (await admin("")).json()) as { eintraege: unknown[] }).eintraege).toHaveLength(0);
+  });
+
+  it("verwerfen entscheidet ohne Anfrage; unbekannte ID ist 404", async () => {
+    const id = await parke();
+    const v = (await (await admin(`/${id}/verwerfen`, "POST")).json()) as { entscheidung: string };
+    expect(v.entscheidung).toBe("verworfen");
+    expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM anfragen").first<{ n: number }>())!.n).toBe(1);
+    expect((await admin("/gibtsnicht")).status).toBe(404);
+  });
+
+  it("scheitert die Freigabe (Dublette), bleibt der Eingang offen", async () => {
+    const id = await parke();
+    const mitKz = eingabe({ kennzeichen: "B AB 123" });
+    await env.DB.prepare("UPDATE eingang_geparkt SET nutzlast = ?2 WHERE id = ?1").bind(id, JSON.stringify(mitKz)).run();
+    await env.DB.prepare("UPDATE anfragen SET dubletten_schluessel = 'anna@example.de|kz:BAB123'").run();
+    expect(await code(await admin(`/${id}/freigeben`, "POST"))).toBe("DUBLETTE");
+    const z = await env.DB.prepare("SELECT entscheidung FROM eingang_geparkt WHERE id = ?1").bind(id).first();
+    expect(z).toEqual({ entscheidung: null });
+  });
+});
