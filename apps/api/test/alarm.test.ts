@@ -1,6 +1,7 @@
 import { env } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 import { AppFehler } from "../src/fehler/app-fehler.js";
+import { mitFehlerspeicher } from "../src/fehler/handler.js";
 import { fehlerSpeichern } from "../src/fehler/speicher.js";
 
 interface Gesendet {
@@ -99,5 +100,16 @@ describe("Alarm (A4)", () => {
     const { email, gesendet } = attrappe();
     await expect(fehlerSpeichern(env.DB, meldung(), "warnung", email)).resolves.toBeUndefined();
     expect(gesendet).toHaveLength(0);
+  });
+});
+
+describe("Alarm außerhalb von HTTP", () => {
+  it("mitFehlerspeicher reicht das E-Mail-Binding durch", async () => {
+    const { email, gesendet } = attrappe();
+    await expect(
+      mitFehlerspeicher(env.DB, "queue bewertung", async () => { throw new AppFehler("INTERN", "Queue kaputt"); }, email),
+    ).rejects.toThrow();
+    expect(gesendet).toHaveLength(1);
+    expect(gesendet[0]!.subject).toContain("INTERN");
   });
 });

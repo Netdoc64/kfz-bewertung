@@ -7,12 +7,12 @@ import { fehlerSpeichern } from "./speicher.js";
  * landet im Fehlerspeicher und wird danach weitergeworfen, damit die
  * Plattform wiederholen kann — nie still.
  */
-export async function mitFehlerspeicher<T>(db: D1Database, ort: string, lauf: (korrelationsId: string) => Promise<T>): Promise<T> {
+export async function mitFehlerspeicher<T>(db: D1Database, ort: string, lauf: (korrelationsId: string) => Promise<T>, email?: SendEmail): Promise<T> {
   const korrelationsId = crypto.randomUUID();
   try {
     return await lauf(korrelationsId);
   } catch (e) {
-    await fehlerSpeichern(db, { fehler: alsAppFehler(e), ort, korrelationsId }, EINSTELLUNGEN["betrieb.fehlerSpeichernAbSchwere"].standard);
+    await fehlerSpeichern(db, { fehler: alsAppFehler(e), ort, korrelationsId }, EINSTELLUNGEN["betrieb.fehlerSpeichernAbSchwere"].standard, email);
     throw e;
   }
 }
