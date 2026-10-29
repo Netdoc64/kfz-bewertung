@@ -280,6 +280,7 @@ export const EINSTELLUNGEN = {
   "ablauf.nachholenMaxJeLauf": def("ablauf", z.number().int().min(1), 50, "Höchstzahl Anfragen, die ein Cron-Lauf nachholt.", { max: 1000 }),
   "ablauf.dublettenFensterTage": def("ablauf", z.number().int().positive(), 14, "Zeitfenster, in dem gleiche Kunde+Fahrzeug als Dublette gilt."),
   "ablauf.berichtGueltigTage": def("ablauf", z.number().int().positive(), 7, "So lange gilt ein Bericht, danach muss neu bewertet werden."),
+  "ablauf.listeSeitenGroesse": def("ablauf", z.number().int().positive().max(200), 25, "Anzahl Anfragen je Seite in der Admin-Liste.", { max: 200 }),
   "ablauf.statusBeschriftungen": def(
     "ablauf",
     z.record(z.string(), z.string()),
