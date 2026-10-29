@@ -163,7 +163,7 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 
 ### Phase 3 — E-Mail-Eingang
 
-- [ ] Cloudflare Email Routing → Worker, Anfrage aus Mail (Text + Anhänge)
+- [x] Cloudflare Email Routing → Worker, Anfrage aus Mail (Text + Anhänge)
 - [x] Schleifenschutz: Autoreply/Bounce erkannt und verworfen (Tests mit echten Header-Beispielen)
 - [ ] Antworten ohne Preis (A1) per Mail, Antworten mit Preis nur nach Freigabe
 - [ ] Datenschutzhinweis in der ersten Antwort (A14)

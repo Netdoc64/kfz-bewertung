@@ -497,6 +497,22 @@ export const EINSTELLUNGEN = {
   "mail.eingangsAdresse": def("mail", MailAdresseSchema, "", "Adresse, an die Kunden Anfragen mailen (E-Mail-Eingang)."),
   "mail.eigeneAdressen": def("mail", z.array(z.string().email()), [], "Weitere eigene Absenderadressen; Mails von hier (und von mail.absenderAdresse) werden als Schleife verworfen."),
   "mail.adminEmpfaenger": def("mail", z.array(z.string().email()), [], "Empfänger für Freigabe-Benachrichtigungen und Alarme."),
+  "mail.maxGroesseBytes": def("mail", z.number().int().positive(), 15_000_000, "Größere eingehende Mails werden als ungültig abgewiesen.", { max: 25_000_000 }),
+  "mail.anhangMaxAnzahl": def("mail", z.number().int().min(0), 5, "Höchstzahl gespeicherter Anhänge je Mail; weitere werden verworfen und protokolliert.", { max: 20 }),
+  "mail.anhangMaxBytes": def("mail", z.number().int().positive(), 8_000_000, "Größere einzelne Anhänge werden nicht gespeichert.", { max: 20_000_000 }),
+  "mail.anhangTypen": def("mail", z.array(z.string().min(3)), ["image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"], "Erlaubte Medientypen für Anhänge (Fahrzeugschein-Fotos)."),
+  "mail.marken": def(
+    "mail",
+    z.array(z.string().min(2)),
+    ["Alfa Romeo", "Audi", "BMW", "Citroën", "Dacia", "Fiat", "Ford", "Honda", "Hyundai", "Jaguar", "Jeep", "Kia", "Land Rover", "Mazda", "Mercedes", "Mini", "Mitsubishi", "Nissan", "Opel", "Peugeot", "Porsche", "Renault", "Seat", "Skoda", "Smart", "Subaru", "Suzuki", "Tesla", "Toyota", "Volvo", "VW", "Volkswagen"],
+    "Marken, die beim regelbasierten Auslesen einer Kundenmail erkannt werden. Unbekannte Marken lösen eine Rückfrage aus.",
+  ),
+  "mail.modellStoppwoerter": def(
+    "mail",
+    z.array(z.string().min(1)),
+    ["aus", "mit", "von", "bj", "baujahr", "ez", "km", "und", "in", "hat", "ist", "der", "die", "das", "im", "zum", "zu", "für"],
+    "Wörter, die direkt hinter einer Marke nie ein Modell sind (Auslesen ohne KI).",
+  ),
 } as const;
 
 export type EinstellungsSchluessel = keyof typeof EINSTELLUNGEN;

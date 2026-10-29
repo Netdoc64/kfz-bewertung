@@ -27,11 +27,11 @@ describe("Verdrahtung", () => {
     expect(r.status).toBe(401);
   });
 
-  it("Handler-Stubs werfen nicht", async () => {
+  it("Handler werfen bei verworfener Mail nicht", async () => {
     const batch = { queue: "bewertung-dead-letter", messages: [], retryAll() {} } as unknown as MessageBatch<unknown>;
     await expect(worker.queue!(batch, env, ctx)).resolves.toBeUndefined();
     await expect(worker.scheduled!({ cron: "*/15 * * * *", scheduledTime: 0, type: "scheduled", noRetry() {} } as ScheduledController, env, ctx)).resolves.toBeUndefined();
-    await expect(worker.email!({ headers: new Headers(), from: "kunde@example.com" } as ForwardableEmailMessage, env, ctx)).resolves.toBeUndefined();
+    await expect(worker.email!({ headers: new Headers({ "Auto-Submitted": "auto-replied" }), from: "kunde@example.com" } as ForwardableEmailMessage, env, ctx)).resolves.toBeUndefined();
   });
 
   it("Vergleichsinserat-Schema nimmt ein gültiges Inserat an", () => {
