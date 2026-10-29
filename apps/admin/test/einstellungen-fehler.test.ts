@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { rendere } from "../src/ansicht.js";
-import { erzeugeApi, type Abruf, type EinstellungsEintrag, type FehlerEintrag } from "../src/api.js";
+import { erzeugeApi, type Abruf, type EinstellungsEintrag, type FehlerEintrag, type Vorschau } from "../src/api.js";
 import { Steuerung } from "../src/steuerung.js";
 
 const eintrag = (schluessel: string, wert: unknown, version = 2): EinstellungsEintrag => ({
@@ -35,13 +35,28 @@ interface Aufruf {
 
 const antwort = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
-function server(opt: { put?: () => Response; quittieren?: () => Response } = {}) {
+const vorschauMit = (anzahl: number): Vorschau => ({
+  schluessel: "x",
+  anzahl,
+  geaendert: anzahl ? 1 : 0,
+  zeilen: Array.from({ length: anzahl }, (_, i) => ({
+    anfrageId: `<a${i}>`,
+    generation: 1,
+    vorher: { marktpreisEuro: 10000, verkaufspreisEuro: 9500, ankaufspreisEuro: 8000, konfidenz: 0.8, anzahlVergleiche: 9, anMenschGruende: [] },
+    nachher: { marktpreisEuro: 10000, verkaufspreisEuro: 9500, ankaufspreisEuro: 7500, konfidenz: 0.8, anzahlVergleiche: 9, anMenschGruende: ["konfidenz_zu_niedrig"] },
+    ankaufDifferenzEuro: -500,
+    geaendert: true,
+  })),
+});
+
+function server(opt: { put?: () => Response; quittieren?: () => Response; vorschau?: () => Response } = {}) {
   const aufrufe: Aufruf[] = [];
   const abruf: Abruf = async (url, init) => {
     aufrufe.push({ url, init });
     if (url.includes("/einstellungen/oberflaeche.beschriftungen")) return antwort({ wert: { konflikt: "Neu geladen." } });
     if (url.includes("/einstellungen/ablauf.statusBeschriftungen")) return antwort({ wert: {} });
     if (url.endsWith("/einstellungen")) return antwort({ abdruck: "x", eintraege: [eintrag("eingang.maxJeAbsenderUndTag", 5), eintrag("ablauf.autopilot", "an", 0)] });
+    if (url.endsWith("/vorschau")) return opt.vorschau ? opt.vorschau() : antwort(vorschauMit(2));
     if (url.includes("/einstellungen/") && init?.method === "PUT") return opt.put ? opt.put() : antwort(eintrag("eingang.maxJeAbsenderUndTag", 6, 3));
     if (url.includes("/fehler?")) return antwort({ fehler: [fehler(7)] });
     if (url.endsWith("/quittieren")) return opt.quittieren ? opt.quittieren() : antwort({ ok: true });
@@ -51,6 +66,7 @@ function server(opt: { put?: () => Response; quittieren?: () => Response } = {})
 }
 
 const puts = (a: Aufruf[]) => a.filter((x) => x.init?.method === "PUT");
+const vorschauen = (a: Aufruf[]) => a.filter((x) => x.url.endsWith("/vorschau"));
 
 describe("Einstellungen bearbeiten", () => {
   it("lädt die Liste und sendet den Wert mit der gesehenen Version", async () => {
@@ -59,6 +75,8 @@ describe("Einstellungen bearbeiten", () => {
     await st.zeigeEinstellungen();
     st.bearbeite("eingang.maxJeAbsenderUndTag");
     st.tippe("6");
+    await st.speichere();
+    expect(puts(s.aufrufe)).toHaveLength(0);
     await st.speichere();
     const put = puts(s.aufrufe)[0];
     expect(put?.url).toBe("/api/admin/einstellungen/eingang.maxJeAbsenderUndTag");
@@ -89,7 +107,61 @@ describe("Einstellungen bearbeiten", () => {
     expect(st.zustand.bearbeitung?.warnungen.length).toBeGreaterThan(0);
     expect(rendere(st.zustand)).toContain("data-speichern");
     await st.speichere();
+    expect(puts(s.aufrufe)).toHaveLength(0);
+    expect(vorschauen(s.aufrufe)).toHaveLength(1);
+    await st.speichere();
     expect(puts(s.aufrufe)).toHaveLength(1);
+  });
+
+  it("zeigt die Vorschau vor dem Speichern, maskiert und ohne zu speichern", async () => {
+    const s = server();
+    const st = new Steuerung(erzeugeApi(s.abruf));
+    await st.zeigeEinstellungen();
+    st.bearbeite("eingang.maxJeAbsenderUndTag");
+    st.tippe("6");
+    await st.speichere();
+    expect(vorschauen(s.aufrufe)).toHaveLength(1);
+    expect(JSON.parse(String(vorschauen(s.aufrufe)[0]?.init?.body))).toEqual({ wert: 6 });
+    expect(puts(s.aufrufe)).toHaveLength(0);
+    const html = rendere(st.zustand);
+    expect(html).toContain("&lt;a0&gt;");
+    expect(html).toContain("konfidenz_zu_niedrig");
+    expect(html).toContain("data-speichern");
+  });
+
+  it("verwirft die Vorschau, sobald der Text sich ändert", async () => {
+    const s = server();
+    const st = new Steuerung(erzeugeApi(s.abruf));
+    await st.zeigeEinstellungen();
+    st.bearbeite("eingang.maxJeAbsenderUndTag");
+    st.tippe("6");
+    await st.speichere();
+    st.tippe("7");
+    expect(st.zustand.bearbeitung?.vorschau).toBeNull();
+    await st.speichere();
+    expect(puts(s.aufrufe)).toHaveLength(0);
+    expect(vorschauen(s.aufrufe)).toHaveLength(2);
+  });
+
+  it("speichert sofort, wenn die Vorschau nichts zu zeigen hat", async () => {
+    const s = server({ vorschau: () => antwort(vorschauMit(0)) });
+    const st = new Steuerung(erzeugeApi(s.abruf));
+    await st.zeigeEinstellungen();
+    st.bearbeite("eingang.maxJeAbsenderUndTag");
+    st.tippe("6");
+    await st.speichere();
+    expect(puts(s.aufrufe)).toHaveLength(1);
+  });
+
+  it("speichert nichts, wenn die Vorschau fehlschlägt", async () => {
+    const s = server({ vorschau: () => antwort({ fehler: { code: "EINGABE_UNGUELTIG", text: "nein" } }, 400) });
+    const st = new Steuerung(erzeugeApi(s.abruf));
+    await st.zeigeEinstellungen();
+    st.bearbeite("eingang.maxJeAbsenderUndTag");
+    st.tippe("6");
+    await st.speichere();
+    expect(puts(s.aufrufe)).toHaveLength(0);
+    expect(st.zustand.meldung).toMatchObject({ code: "EINGABE_UNGUELTIG" });
   });
 
   it("setzt mit null auf den Standard zurück", async () => {
@@ -97,6 +169,7 @@ describe("Einstellungen bearbeiten", () => {
     const st = new Steuerung(erzeugeApi(s.abruf));
     await st.zeigeEinstellungen();
     st.bearbeite("eingang.maxJeAbsenderUndTag");
+    await st.speichere(true);
     await st.speichere(true);
     expect(JSON.parse(String(puts(s.aufrufe)[0]?.init?.body))).toEqual({ wert: null, version: 2 });
   });
@@ -109,6 +182,7 @@ describe("Einstellungen bearbeiten", () => {
     st.bearbeite("eingang.maxJeAbsenderUndTag");
     st.tippe("6");
     await st.speichere();
+    await st.speichere();
     expect(puts(s.aufrufe)).toHaveLength(1);
     expect(st.zustand.meldung).toMatchObject({ art: "konflikt", text: "Neu geladen." });
     expect(st.zustand.bearbeitung).toBeNull();
@@ -119,6 +193,7 @@ describe("Einstellungen bearbeiten", () => {
     const st = new Steuerung(erzeugeApi(s.abruf));
     await st.zeigeEinstellungen();
     st.bearbeite("ablauf.autopilot");
+    await st.speichere();
     await st.speichere();
     expect(st.zustand.meldung).toMatchObject({ code: "EINSTELLUNG_UNGUELTIG", korrelationsId: "k-2" });
     expect(st.zustand.bearbeitung).not.toBeNull();

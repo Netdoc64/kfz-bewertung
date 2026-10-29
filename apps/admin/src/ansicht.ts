@@ -1,5 +1,5 @@
 import type { Aktion, Anfrage, Detail } from "./api.js";
-import type { Zustand } from "./steuerung.js";
+import type { Bearbeitung, Zustand } from "./steuerung.js";
 
 const ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 
@@ -100,6 +100,30 @@ export function rendereDetail(z: Zustand): string {
 
 const wertText = (w: unknown) => JSON.stringify(w) ?? "";
 
+const euro = (w: number | null) => (w === null ? "–" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(w));
+
+function vorschauBlock(b: Bearbeitung, t: T): string {
+  const v = b.vorschau?.ergebnis;
+  if (!v) return "";
+  const zeilen = v.zeilen
+    .map((z) => {
+      const grund = (x: string[]) => (x.length ? x.join(", ") : "–");
+      return (
+        `<tr class="${z.geaendert ? "geaendert" : "gleich"}"><td><code>${esc(z.anfrageId)}</code></td>` +
+        `<td>${esc(euro(z.vorher.ankaufspreisEuro))}</td><td>${esc(euro(z.nachher.ankaufspreisEuro))}</td>` +
+        `<td>${z.ankaufDifferenzEuro === null ? "–" : esc(euro(z.ankaufDifferenzEuro))}</td>` +
+        `<td>${esc(grund(z.vorher.anMenschGruende))} → ${esc(grund(z.nachher.anMenschGruende))}</td></tr>`
+      );
+    })
+    .join("");
+  return (
+    `<div class="vorschau"><h3>${esc(t("vorschauTitel"))}</h3>` +
+    `<p>${esc(v.geaendert)} ${esc(t("vorschauVon"))} ${esc(v.anzahl)} ${esc(t("vorschauGeaendert"))}</p>` +
+    `<table><thead><tr><th>${esc(t("vorschauAnfrage"))}</th><th>${esc(t("vorschauVorher"))}</th><th>${esc(t("vorschauNachher"))}</th><th>${esc(t("vorschauDifferenz"))}</th><th>${esc(t("vorschauMensch"))}</th></tr></thead><tbody>${zeilen}</tbody></table>` +
+    `<p>${esc(t("vorschauHinweis"))}</p></div>`
+  );
+}
+
 function bearbeitungsFeld(z: Zustand, t: T): string {
   const b = z.bearbeitung;
   const e = z.einstellungen?.find((x) => x.schluessel === b?.schluessel);
@@ -111,8 +135,8 @@ function bearbeitungsFeld(z: Zustand, t: T): string {
   return (
     `<section class="bearbeitung"><h2>${esc(e.schluessel)}</h2><p>${esc(e.beschreibung)}</p>${warnung}` +
     `<label>${esc(t("wert"))}<textarea data-wert rows="12" cols="80">${esc(b.text)}</textarea></label>` +
-    `<p>${esc(t("standardwert"))}: <code>${esc(wertText(e.standard))}</code></p>` +
-    `<button data-speichern${sperre}>${esc(b.warnungen.length ? t("trotzdemSpeichern") : t("speichern"))}</button> ` +
+    `<p>${esc(t("standardwert"))}: <code>${esc(wertText(e.standard))}</code></p>${vorschauBlock(b, t)}` +
+    `<button data-speichern${sperre}>${esc(b.vorschau ? t("speichernNachVorschau") : b.warnungen.length ? t("trotzdemSpeichern") : t("vorschauZeigen"))}</button> ` +
     `<button data-zuruecksetzen${sperre}>${esc(t("zuruecksetzen"))}</button> <button data-abbrechen>${esc(t("abbrechen"))}</button></section>`
   );
 }

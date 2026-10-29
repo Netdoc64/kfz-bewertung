@@ -86,6 +86,31 @@ export interface EinstellungsEintrag {
   geaendertVon: string | null;
 }
 
+export interface VorschauZahlen {
+  marktpreisEuro: number | null;
+  verkaufspreisEuro: number | null;
+  ankaufspreisEuro: number | null;
+  konfidenz: number;
+  anzahlVergleiche: number;
+  anMenschGruende: string[];
+}
+
+export interface VorschauZeile {
+  anfrageId: string;
+  generation: number;
+  vorher: VorschauZahlen;
+  nachher: VorschauZahlen;
+  ankaufDifferenzEuro: number | null;
+  geaendert: boolean;
+}
+
+export interface Vorschau {
+  schluessel: string;
+  anzahl: number;
+  geaendert: number;
+  zeilen: VorschauZeile[];
+}
+
 export interface FehlerEintrag {
   id: number;
   code: string;
@@ -140,6 +165,12 @@ export function erzeugeApi(abruf: Abruf, basis = "/api/admin") {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ wert, version }),
+      }),
+    vorschau: (schluessel: string, wert: unknown): Promise<Vorschau> =>
+      rufe(`/einstellungen/${encodeURIComponent(schluessel)}/vorschau`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ wert }),
       }),
     fehlerListe: async (offen: boolean): Promise<FehlerEintrag[]> => (await rufe<{ fehler: FehlerEintrag[] }>(`/fehler?offen=${offen ? "ja" : "alle"}`)).fehler,
     quittiere: (id: number): Promise<{ ok: true }> => rufe(`/fehler/${id}/quittieren`, { method: "POST" }),
