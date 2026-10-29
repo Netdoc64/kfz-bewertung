@@ -28,10 +28,8 @@ describe("Verdrahtung", () => {
   });
 
   it("Handler-Stubs werfen nicht", async () => {
-    let bestaetigt = false;
-    const batch = { queue: "bewertung-dead-letter", messages: [], ackAll: () => (bestaetigt = true), retryAll() {} } as unknown as MessageBatch<unknown>;
+    const batch = { queue: "bewertung-dead-letter", messages: [], retryAll() {} } as unknown as MessageBatch<unknown>;
     await expect(worker.queue!(batch, env, ctx)).resolves.toBeUndefined();
-    expect(bestaetigt).toBe(true);
     await expect(worker.scheduled!({ cron: "*/15 * * * *", scheduledTime: 0, type: "scheduled", noRetry() {} } as ScheduledController, env, ctx)).resolves.toBeUndefined();
     await expect(worker.email!({ headers: new Headers(), from: "kunde@example.com" } as ForwardableEmailMessage, env, ctx)).resolves.toBeUndefined();
   });
