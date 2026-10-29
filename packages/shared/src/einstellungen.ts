@@ -23,7 +23,8 @@ export type EinstellungsGruppe =
   | "eingang"
   | "benachrichtigung"
   | "bericht"
-  | "mail";
+  | "mail"
+  | "oberflaeche";
 
 /** Plausibler Bereich eines Zahlenwerts. Außerhalb: Warnung, kein Schemafehler. */
 export interface Plausibilitaet {
@@ -301,6 +302,49 @@ export const EINSTELLUNGEN = {
       fehlgeschlagen: "Fehlgeschlagen",
     },
     "Anzeigenamen der Status in der Oberfläche.",
+  ),
+
+  "oberflaeche.beschriftungen": def(
+    "oberflaeche",
+    z.record(z.string(), z.string()),
+    {
+      titel: "Anfragen",
+      alle: "Alle",
+      filter: "Status",
+      leer: "Keine Anfragen.",
+      laedt: "Lädt …",
+      zurueck: "Zurück zur Liste",
+      vor: "Weiter",
+      zurueckSeite: "Zurück",
+      seite: "Seite",
+      von: "von",
+      kunde: "Kunde",
+      fahrzeug: "Fahrzeug",
+      status: "Status",
+      geaendert: "Geändert",
+      bericht: "Bericht",
+      keinBericht: "Noch kein Bericht.",
+      ereignisse: "Verlauf",
+      nachrichten: "Nachrichten an den Kunden",
+      kundenNachrichten: "Nachrichten vom Kunden",
+      notiz: "Notiz (optional)",
+      aktionen: "Aktionen",
+      keineAktionen: "Keine Aktion möglich.",
+      konflikt: "Die Anfrage wurde zwischenzeitlich geändert und wurde neu geladen.",
+      fehler: "Fehler",
+      erneut: "Erneut versuchen",
+      "aktion.freigeben": "Freigeben",
+      "aktion.ablehnen": "Ablehnen",
+      "aktion.nachbearbeiten": "Nachbearbeiten",
+      "aktion.angebot_senden": "Angebot senden",
+      "aktion.verhandeln": "Verhandlung starten",
+      "aktion.gegenangebot_senden": "Gegenangebot senden",
+      "aktion.besichtigung_planen": "Besichtigung planen",
+      "aktion.ankauf_abschliessen": "Ankauf abschließen",
+      "aktion.absagen": "Absagen",
+      "aktion.uebernehmen": "Selbst übernehmen",
+    },
+    "Beschriftungen der Admin-Oberfläche (Anfragenliste und Detail).",
   ),
 
   // Datenquelle
