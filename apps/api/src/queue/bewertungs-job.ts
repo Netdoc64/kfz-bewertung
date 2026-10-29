@@ -3,8 +3,10 @@ import { z } from "zod";
 import type { BewertungsJob } from "../anfragen/index.js";
 import { bewerte, ladeBewertungsEinstellungen, type Bewertung } from "../bewertung/bewerten.js";
 import { berichtSpeichern } from "../bericht/index.js";
+import { meldeFreigabe } from "../benachrichtigung/index.js";
 import type { Einstellungen } from "../einstellungen/dienst.js";
-import { AppFehler } from "../fehler/app-fehler.js";
+import { AppFehler, alsAppFehler } from "../fehler/app-fehler.js";
+import { fehlerSpeichern } from "../fehler/speicher.js";
 import { waehleQuelle } from "../quelle/index.js";
 import type { Suche } from "../quelle/port.js";
 
@@ -27,6 +29,8 @@ export type JobErgebnis = "uebersprungen" | "zur_freigabe" | "an_mensch" | "fehl
 export interface JobAbhaengigkeiten {
   suche?: Suche;
   berichte?: R2Bucket;
+  /** Für die sofortige Freigabe-Meldung (A3); ohne Angabe holt der Cron sie nach. */
+  email?: SendEmail;
   jetzt?: () => Date;
 }
 
@@ -152,5 +156,11 @@ export async function verarbeiteBewertungsJob(
     return "an_mensch";
   }
   await beende("bewertung_fertig");
+  if (abh.email) {
+    // A3: der Admin erfährt sofort von der offenen Freigabe; scheitert das, holt der Cron es nach.
+    await meldeFreigabe(db, einstellungen, abh.email, { id: job.anfrageId, generation: job.generation, fahrzeug: anfrage.fahrzeug }, "neu", 0).catch((e) =>
+      fehlerSpeichern(db, { fehler: alsAppFehler(e), ort: "queue:freigabe-benachrichtigung", korrelationsId: job.korrelation }, "info", abh.email),
+    );
+  }
   return "zur_freigabe";
 }

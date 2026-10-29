@@ -16,7 +16,7 @@ export async function verarbeiteQueue(batch: MessageBatch<unknown>, env: Binding
     const einstellungen = new Einstellungen(env.DB, async () => {});
     for (const nachricht of batch.messages) {
       try {
-        await verarbeiteBewertungsJob(env.DB, einstellungen, nachricht.body, { berichte: env.BERICHTE });
+        await verarbeiteBewertungsJob(env.DB, einstellungen, nachricht.body, { berichte: env.BERICHTE, email: env.EMAIL });
         nachricht.ack();
       } catch (e) {
         const fehler = alsAppFehler(e);
