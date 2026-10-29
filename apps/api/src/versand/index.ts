@@ -2,6 +2,7 @@ import type { Einstellungen } from "../einstellungen/dienst.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 import type { Kanal } from "./kanal.js";
 
+export { ManagerKanal, alsE164, type ManagerZugang, type ManagerRegeln } from "./manager.js";
 export { MockKanal, type AusgehendeNachricht, type Kanal } from "./kanal.js";
 
 /** Status, ab denen ein Admin die Bewertung freigegeben hat (Statusmaschine, keine Fachzahl). */

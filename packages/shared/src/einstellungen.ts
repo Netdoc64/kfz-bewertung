@@ -552,6 +552,10 @@ export const EINSTELLUNGEN = {
   ),
 
   // Mail (Adressen, keine Geheimnisse; leer = nicht konfiguriert)
+  "versand.manager.zeitlimitMs": def("betrieb", z.number().int().positive(), 10_000, "Zeitlimit je Aufruf an den Manager (Millisekunden).", { min: 1_000, max: 30_000 }),
+  "versand.manager.wiederholungen": def("betrieb", z.number().int().min(0), 2, "Weitere Versuche nach einem wiederholbaren Managerfehler (mit derselben Korrelation).", { max: 5 }),
+  "versand.manager.abstandMs": def("betrieb", z.number().int().min(0), 2_000, "Wartezeit zwischen zwei Versuchen (Millisekunden); ein Retry-After des Managers hat Vorrang, gedeckelt durch versand.manager.abstandMaxMs.", { max: 30_000 }),
+  "versand.manager.abstandMaxMs": def("betrieb", z.number().int().min(0), 10_000, "Längste Wartezeit zwischen zwei Versuchen, auch wenn der Manager mehr verlangt (Millisekunden).", { max: 60_000 }),
   "mail.absenderAdresse": def("mail", MailAdresseSchema, "", "Absenderadresse für ausgehende Mails."),
   "mail.antwortBetreff": def("mail", z.string().min(1), "Ihre Anfrage", "Betreff automatischer Antworten, wenn die Kundenmail keinen Betreff hatte (sonst „Re: …“)."),
   "mail.eingangsAdresse": def("mail", MailAdresseSchema, "", "Adresse, an die Kunden Anfragen mailen (E-Mail-Eingang)."),

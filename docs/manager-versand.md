@@ -72,7 +72,7 @@ Fehler, immer dieselbe Form:
 ## Verhalten im ManagerKanal
 
 - Jede Abweichung wird `AppFehler("VERSAND_FEHLGESCHLAGEN")` (Katalog vorhanden); `code` des Managers kommt als Kontext, nie der Text/die Nummer.
-- Zeitlimit und Wiederholungen (Anzahl, Abstand) aus der Registry (`versand.manager.*`, neu anzulegen mit dem Adapter), nicht im Code. Wiederholt wird nur bei `wiederholbar: true`, mit **derselben** `korrelation`.
+- Zeitlimit und Wiederholungen (Anzahl, Abstand) aus der Registry (`versand.manager.zeitlimitMs`, `.wiederholungen`, `.abstandMs`, `.abstandMaxMs`), nicht im Code. Wiederholt wird nur bei `wiederholbar: true`, mit **derselben** `korrelation`.
 - `kanalFuerKontakt`: Kontakt mit `@` → E-Mail, Kontakt `+`/Ziffern → `ManagerKanal`, sonst `null`; fehlt `MANAGER_VERSAND_URL`, `null` (an Mensch), nicht raten.
 - Not-Aus `ablauf.autopilot` und Freigabeprüfung liegen vor dem Kanal und gelten unverändert.
 
