@@ -1,0 +1,14 @@
+Return-Path: <max.mustermann@web.example>
+Received: from mout.web.example (mout.web.example [212.227.17.11])
+	by mx.example.org (Postfix) with ESMTPS id 4F3B2000D9
+	for <bewertung@kfz-beispiel.example>; Sat, 18 Oct 2026 14:20:00 +0200 (CEST)
+From: Max Mustermann <max.mustermann@web.example>
+To: bewertung@kfz-beispiel.example
+Subject: Bewertung VW Golf 7, Baujahr 2016
+Date: Sat, 18 Oct 2026 14:19:58 +0200
+Message-ID: <trinity-0a1b2c3d-4e5f-6789@3c-app-webde-bap12>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Hallo, ich moechte meinen VW Golf 7 bewerten lassen. Kilometerstand 98.000.
