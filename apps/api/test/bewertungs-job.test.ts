@@ -47,6 +47,25 @@ beforeEach(async () => {
 });
 
 describe("Bewertungs-Job", () => {
+  it("meldet die Freigabe sofort und nur einmal; Versandfehler stoppt den Job nicht", async () => {
+    await locker();
+    await setze("mail.absenderAdresse", "kfz@example.de");
+    await setze("mail.adminEmpfaenger", ["admin@example.de"]);
+    await env.DB.prepare("DELETE FROM freigabe_benachrichtigungen").run();
+    const mails: { subject: string }[] = [];
+    const email = { send: async (m: { subject: string }) => (mails.push(m), { messageId: "x" }) } as unknown as SendEmail;
+    await anfrage("m1");
+    expect(await verarbeiteBewertungsJob(env.DB, einst(), job("m1", 1), { email })).toBe("zur_freigabe");
+    expect(mails.map((m) => m.subject)).toEqual(["Neue Freigabe wartet: m1"]);
+
+    await anfrage("m2");
+    const kaputt = { send: async () => { throw new Error("Versand kaputt"); } } as unknown as SendEmail;
+    expect(await verarbeiteBewertungsJob(env.DB, einst(), job("m2", 1), { email: kaputt })).toBe("zur_freigabe");
+    expect(await status("m2")).toBe("zur_freigabe");
+    const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM freigabe_benachrichtigungen WHERE anfrage_id = 'm2'").first<{ n: number }>();
+    expect(n!.n).toBe(0);
+  });
+
   it("startet die Bewertung und ist bei erneuter Zustellung ein No-op", async () => {
     await locker();
     await anfrage("a1");
