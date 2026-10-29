@@ -7,6 +7,7 @@ import { fuehreCronAus } from "./cron/index.js";
 import { verarbeiteQueue } from "./queue/index.js";
 import { anfragenRouten } from "./routen/anfragen.js";
 import { deadLetterRouten } from "./routen/dead-letter.js";
+import { geparktRouten } from "./routen/geparkt.js";
 import { formularRouten } from "./routen/formular.js";
 import { kennzahlenRouten } from "./routen/kennzahlen.js";
 import { einstellungenRouten } from "./routen/einstellungen.js";
@@ -24,6 +25,7 @@ export const app = new Hono<AppUmgebung>()
   .route("/api/admin/einstellungen", einstellungenRouten)
   .route("/api/admin/fehler", fehlerRouten)
   .route("/api/admin/anfragen", anfragenRouten)
+  .route("/api/admin/geparkt", geparktRouten)
   .route("/api/admin/dead-letter", deadLetterRouten)
   .route("/api/admin/kennzahlen", kennzahlenRouten);
 
