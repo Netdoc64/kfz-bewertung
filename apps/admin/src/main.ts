@@ -19,11 +19,26 @@ wurzel.addEventListener("click", (e) => {
   const ziel = e.target as HTMLElement;
   const zeile = ziel.closest<HTMLElement>("tr[data-id]");
   const knopf = ziel.closest<HTMLElement>("[data-aktion]");
+  const nav = ziel.closest<HTMLElement>("[data-nav]");
+  const bearbeite = ziel.closest<HTMLElement>("[data-bearbeite]");
+  const quittiere = ziel.closest<HTMLElement>("[data-quittiere]");
   const seite = ziel.closest<HTMLElement>("[data-seite]");
-  if (knopf) void steuerung.fuehreAus(knopf.dataset.aktion ?? "", notizFeld()?.value.trim() || undefined);
+  if (nav) {
+    const w = nav.dataset.nav;
+    void (w === "einstellungen" ? steuerung.zeigeEinstellungen() : w === "fehler" ? steuerung.zeigeFehler() : steuerung.ladeListe());
+  } else if (bearbeite) steuerung.bearbeite(bearbeite.dataset.bearbeite ?? "");
+  else if (quittiere) void steuerung.quittiere(Number(quittiere.dataset.quittiere));
+  else if (ziel.closest("[data-speichern]")) void steuerung.speichere();
+  else if (ziel.closest("[data-zuruecksetzen]")) void steuerung.speichere(true);
+  else if (ziel.closest("[data-abbrechen]")) steuerung.brichAb();
+  else if (knopf) void steuerung.fuehreAus(knopf.dataset.aktion ?? "", notizFeld()?.value.trim() || undefined);
   else if (seite) void steuerung.geheZuSeite(Number(seite.dataset.seite));
   else if (ziel.closest("[data-zurueck]")) void steuerung.ladeListe();
   else if (zeile) void steuerung.oeffne(zeile.dataset.id ?? "");
+});
+wurzel.addEventListener("input", (e) => {
+  const ziel = e.target as HTMLElement;
+  if (ziel.matches("[data-wert]")) steuerung.tippe((ziel as HTMLTextAreaElement).value);
 });
 wurzel.addEventListener("change", (e) => {
   const ziel = e.target as HTMLElement;
