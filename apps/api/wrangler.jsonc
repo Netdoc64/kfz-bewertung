@@ -14,6 +14,18 @@
       "migrations_dir": "migrations"
     }
   ],
+  "queues": {
+    "producers": [{ "binding": "BEWERTUNG_QUEUE", "queue": "bewertung" }],
+    "consumers": [
+      // max_retries = Plattform-Standard laut Doku. Der fachliche Wert quelle.maxVersuche wird zur Laufzeit gelesen.
+      { "queue": "bewertung", "max_retries": 3, "dead_letter_queue": "bewertung-dead-letter" },
+      // Dead-Letter-Queue hat einen eigenen Consumer, damit Nachrichten sichtbar werden.
+      { "queue": "bewertung-dead-letter", "max_retries": 0 }
+    ]
+  },
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "send_email": [{ "name": "EMAIL" }],
+  "r2_buckets": [{ "binding": "BERICHTE", "bucket_name": "kfz-bewertung-berichte" }],
   // Oberste Ebene = Produktion. Ein `wrangler deploy` ohne --env ist damit sicher:
   // die Access-Prüfung ist an, und ohne ACCESS_* verweigert der Admin-Bereich.
   "vars": {
@@ -36,7 +48,19 @@
           "database_id": "00000000-0000-0000-0000-000000000000",
           "migrations_dir": "migrations"
         }
-      ]
+      ],
+      "queues": {
+        "producers": [{ "binding": "BEWERTUNG_QUEUE", "queue": "bewertung-dev" }],
+        "consumers": [
+          // max_retries = Plattform-Standard laut Doku. Der fachliche Wert quelle.maxVersuche wird zur Laufzeit gelesen.
+          { "queue": "bewertung-dev", "max_retries": 3, "dead_letter_queue": "bewertung-dead-letter-dev" },
+          // Dead-Letter-Queue hat einen eigenen Consumer, damit Nachrichten sichtbar werden.
+          { "queue": "bewertung-dead-letter-dev", "max_retries": 0 }
+        ]
+      },
+      "triggers": { "crons": ["*/15 * * * *"] },
+      "send_email": [{ "name": "EMAIL" }],
+      "r2_buckets": [{ "binding": "BERICHTE", "bucket_name": "kfz-bewertung-berichte-dev" }]
     }
   }
 }
