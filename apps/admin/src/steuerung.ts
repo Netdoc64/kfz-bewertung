@@ -1,5 +1,17 @@
 import { plausibilitaetsWarnungen, type EinstellungsSchluessel } from "@kfz/shared";
-import { ApiFehler, type Api, type Beschriftungen, type Detail, type EinstellungsEintrag, type FehlerEintrag, type Liste, type Vorschau } from "./api.js";
+import {
+  ApiFehler,
+  type Abweichungen,
+  type Api,
+  type Beschriftungen,
+  type DeadLetterEintrag,
+  type Detail,
+  type EinstellungsEintrag,
+  type FehlerEintrag,
+  type Kennzahlen,
+  type Liste,
+  type Vorschau,
+} from "./api.js";
 
 export interface Meldung {
   art: "konflikt" | "fehler";
@@ -18,7 +30,7 @@ export interface Bearbeitung {
 }
 
 export interface Zustand {
-  ansicht: "liste" | "detail" | "einstellungen" | "fehler";
+  ansicht: "liste" | "detail" | "einstellungen" | "fehler" | "deadletter" | "kennzahlen";
   laedt: boolean;
   beschriftungen: Beschriftungen;
   statusNamen: Record<string, string>;
@@ -30,6 +42,11 @@ export interface Zustand {
   einstellungen: EinstellungsEintrag[] | null;
   bearbeitung: Bearbeitung | null;
   fehlerListe: FehlerEintrag[] | null;
+  deadLetter: DeadLetterEintrag[] | null;
+  kennzahlen: Kennzahlen | null;
+  abweichungen: Abweichungen | null;
+  /** Gewählter Zeitraum als Datum (JJJJ-MM-TT); leer = Standardzeitraum der API. */
+  zeitraum: { von: string; bis: string };
 }
 
 /**
@@ -50,6 +67,10 @@ export class Steuerung {
     einstellungen: null,
     bearbeitung: null,
     fehlerListe: null,
+    deadLetter: null,
+    kennzahlen: null,
+    abweichungen: null,
+    zeitraum: { von: "", bis: "" },
   };
 
   constructor(
@@ -190,6 +211,50 @@ export class Steuerung {
     await this.zeigeFehler();
   }
 
+  async zeigeDeadLetter(meldung: Meldung | null = null): Promise<void> {
+    this.setze({ ansicht: "deadletter", laedt: true, meldung });
+    try {
+      const deadLetter = await this.api.deadLetterListe();
+      this.setze({ deadLetter, laedt: false });
+    } catch (e) {
+      this.fehler(e);
+    }
+  }
+
+  /** Reiht einen Eintrag erneut ein; war er schon eingereiht (bereitsEingereiht), gibt es nur den Hinweis, die Liste zeigt den wahren Stand. */
+  async reiheErneutEin(id: number): Promise<void> {
+    if (this.zustand.laedt) return;
+    this.setze({ laedt: true, meldung: null });
+    let hinweis: Meldung | null = null;
+    try {
+      const r = await this.api.erneutEinreihen(id);
+      if (r.bereitsEingereiht) hinweis = { art: "konflikt", text: this.zustand.beschriftungen.bereitsEingereiht ?? "" };
+    } catch (e) {
+      this.fehler(e);
+      return;
+    }
+    await this.zeigeDeadLetter(hinweis);
+  }
+
+  async zeigeKennzahlen(): Promise<void> {
+    this.setze({ ansicht: "kennzahlen", laedt: true, meldung: null });
+    const { von, bis } = this.zustand.zeitraum;
+    // Datumsangaben gelten als UTC-Tage; der Endtag gehört noch zum Zeitraum.
+    const vonIso = von ? `${von}T00:00:00Z` : undefined;
+    const bisIso = bis ? `${bis}T23:59:59Z` : undefined;
+    try {
+      const [kennzahlen, abweichungen] = await Promise.all([this.api.kennzahlen(vonIso, bisIso), this.api.abweichungen()]);
+      this.setze({ kennzahlen, abweichungen, laedt: false });
+    } catch (e) {
+      this.fehler(e);
+    }
+  }
+
+  async setzeZeitraum(von: string, bis: string): Promise<void> {
+    this.zustand = { ...this.zustand, zeitraum: { von, bis } };
+    await this.zeigeKennzahlen();
+  }
+
   async setzeFilter(status: string | null): Promise<void> {
     this.zustand = { ...this.zustand, filter: status || null, seite: 1 };
     await this.ladeListe();
@@ -213,12 +278,14 @@ export class Steuerung {
   }
 
   /** Sendet die Aktion mit der Version, die der Admin gesehen hat. Bei VERSION_KONFLIKT wird neu geladen, nichts wird erneut gesendet. */
-  async fuehreAus(aktion: string, notiz?: string): Promise<void> {
+  async fuehreAus(aktion: string, notiz?: string, preisText?: string): Promise<void> {
     const d = this.zustand.detail;
     if (!d || this.zustand.laedt) return;
     this.setze({ laedt: true, meldung: null });
     try {
-      await this.api.aktion(d.anfrage.id, aktion, d.anfrage.version, notiz);
+      // Der tatsächliche Preis (A11) gehört nur zum Ankauf; ob er brauchbar ist, entscheidet die API (ANKAUFSPREIS_UNGUELTIG).
+      const preis = aktion === "ankauf_abschliessen" && preisText ? Number(preisText.trim().replace(",", ".")) : Number.NaN;
+      await this.api.aktion(d.anfrage.id, aktion, d.anfrage.version, notiz, Number.isNaN(preis) ? undefined : preis);
     } catch (e) {
       if (e instanceof ApiFehler && e.code === "VERSION_KONFLIKT") {
         await this.oeffne(d.anfrage.id, { art: "konflikt", code: e.code, text: this.zustand.beschriftungen.konflikt ?? e.text });

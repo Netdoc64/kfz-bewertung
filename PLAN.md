@@ -157,8 +157,8 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 - [ ] Cron-Aufgaben aus A5, jede mit Test für Idempotenz
 - [ ] Benachrichtigung und Erinnerung für offene Freigaben (A3)
 - [ ] Alarm mit Ruhezeit je Fingerabdruck (A4)
-- [ ] Dead-Letter-Ansicht mit erneut Einreihen
-- [ ] Kennzahlen-Seite (A12)
+- [x] Dead-Letter-Ansicht mit erneut Einreihen
+- [x] Kennzahlen-Seite (A12)
 - [x] Erfassung des tatsächlichen Ankaufspreises (A11)
 
 ### Phase 3 — E-Mail-Eingang

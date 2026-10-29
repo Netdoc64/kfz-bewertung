@@ -124,7 +124,57 @@ export interface FehlerEintrag {
   quittiertAm: string | null;
 }
 
-export type Beschriftungen =Record<string, string>;
+export interface DeadLetterEintrag {
+  id: number;
+  nachricht_id: string;
+  queue: string;
+  anfrage_id: string | null;
+  job_generation: number | null;
+  korrelation: string | null;
+  nutzlast: unknown;
+  versuche: number;
+  erstellt_am: string;
+  erneut_am: string | null;
+  erneut_von: string | null;
+  erneut_generation: number | null;
+  /** Nur in der Antwort von POST :id/erneut. */
+  bereitsEingereiht?: boolean;
+}
+
+export interface Dauer {
+  anzahl: number;
+  /** Sekunden */
+  mittel: number | null;
+  median: number | null;
+  max: number | null;
+}
+
+export interface Kennzahlen {
+  zeitraum: { von: string; bis: string };
+  anfragen: number;
+  durchlaufzeit: Record<string, Dauer | number | undefined>;
+  anMensch: { anzahl: number; anteil: number | null; mitGrund: number; anteilMitGrund: number | null; gruende: Record<string, number> };
+  konfidenz: { berichte: number; mittel: number | null; klassen: { von: number | null; bis: number | null; anzahl: number }[] };
+  fehlerrate: { bewertungen: number; fehlgeschlagen: number; rate: number | null };
+  freigabedauer: Dauer;
+}
+
+export interface AbweichungsZeile {
+  marke: string;
+  segment: string;
+  anzahl: number;
+  abweichungEuro: number;
+  abweichungProzent: number;
+  belastbar: boolean;
+}
+
+export interface Abweichungen {
+  gesamt: number;
+  ohneSchaetzung: number;
+  zeilen: AbweichungsZeile[];
+}
+
+export type Beschriftungen = Record<string, string>;
 
 /** Fehler der API im Format des Fehlerkatalogs. */
 export class ApiFehler extends Error {
@@ -180,11 +230,21 @@ export function erzeugeApi(abruf: Abruf, basis = "/api/admin") {
       return rufe<Liste>(`/anfragen?${q}`);
     },
     detail: (id: string): Promise<Detail> => rufe<Detail>(`/anfragen/${encodeURIComponent(id)}`),
-    aktion: (id: string, aktion: string, version: number, notiz?: string): Promise<{ version: number }> =>
+    deadLetterListe: async (alle = false): Promise<DeadLetterEintrag[]> => (await rufe<{ eintraege: DeadLetterEintrag[] }>(`/dead-letter${alle ? "?alle=1" : ""}`)).eintraege,
+    erneutEinreihen: (id: number): Promise<DeadLetterEintrag> => rufe(`/dead-letter/${id}/erneut`, { method: "POST" }),
+    kennzahlen(von?: string, bis?: string): Promise<Kennzahlen> {
+      const q = new URLSearchParams();
+      if (von) q.set("von", von);
+      if (bis) q.set("bis", bis);
+      const s = q.toString();
+      return rufe<Kennzahlen>(`/kennzahlen${s ? `?${s}` : ""}`);
+    },
+    abweichungen: (): Promise<Abweichungen> => rufe("/anfragen/auswertung/ankaeufe"),
+    aktion: (id: string, aktion: string, version: number, notiz?: string, ankaufspreisEuro?: number): Promise<{ version: number }> =>
       rufe(`/anfragen/${encodeURIComponent(id)}/aktion`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ aktion, version, ...(notiz ? { notiz } : {}) }),
+        body: JSON.stringify({ aktion, version, ...(notiz ? { notiz } : {}), ...(ankaufspreisEuro !== undefined ? { ankaufspreisEuro } : {}) }),
       }),
   };
 }
