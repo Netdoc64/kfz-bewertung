@@ -1,0 +1,232 @@
+import { z } from "zod";
+import { REGEL_FELDER } from "./fahrzeug.js";
+
+/**
+ * Einstellungs-Registry — die einzige Quelle für fachliche Werte.
+ *
+ * Jeder Schlüssel hat ein Schema, einen Standardwert und eine Beschreibung.
+ * Laufzeitwerte liegen versioniert in D1 (Tabelle `einstellungen`) und
+ * überschreiben den Standardwert. Ein ungültiger gespeicherter Wert fällt auf
+ * den Standard zurück und wird als Fehler gemeldet — er bringt nichts zum Absturz.
+ *
+ * Regeln: Schlüssel nie umbenennen, Typ nie ohne Migration ändern.
+ */
+
+export type EinstellungsGruppe = "bewertung" | "ankauf" | "antwort" | "ablauf" | "quelle" | "ki" | "betrieb";
+
+interface Definition<S extends z.ZodTypeAny> {
+  schema: S;
+  standard: z.infer<S>;
+  gruppe: EinstellungsGruppe;
+  beschreibung: string;
+}
+
+function def<S extends z.ZodTypeAny>(gruppe: EinstellungsGruppe, schema: S, standard: z.infer<S>, beschreibung: string): Definition<S> {
+  return { schema, standard, gruppe, beschreibung };
+}
+
+// --- Teilschemas -----------------------------------------------------------
+
+export const SuchStufeSchema = z.object({
+  ezToleranzJahre: z.number().int().min(0),
+  kmToleranzProzent: z.number().min(0),
+  umkreisKm: z.number().int().positive().nullable(),
+  leistungToleranzProzent: z.number().min(0),
+});
+
+export const RegelBedingungSchema = z.discriminatedUnion("op", [
+  z.object({ feld: z.enum(REGEL_FELDER), op: z.literal("gleich"), wert: z.union([z.string(), z.number(), z.boolean()]) }),
+  z.object({ feld: z.enum(REGEL_FELDER), op: z.literal("ungleich"), wert: z.union([z.string(), z.number(), z.boolean()]) }),
+  z.object({ feld: z.enum(REGEL_FELDER), op: z.literal("kleiner"), wert: z.number() }),
+  z.object({ feld: z.enum(REGEL_FELDER), op: z.literal("groesser"), wert: z.number() }),
+  z.object({ feld: z.enum(REGEL_FELDER), op: z.literal("zwischen"), von: z.number(), bis: z.number() }),
+  z.object({ feld: z.enum(REGEL_FELDER), op: z.literal("enthaelt"), wert: z.string() }),
+  z.object({ feld: z.enum(REGEL_FELDER), op: z.literal("fehlt") }),
+]);
+
+export const AnkaufRegelSchema = z.object({
+  id: z.string().min(1),
+  bezeichnung: z.string().min(1),
+  aktiv: z.boolean(),
+  /** Alle Bedingungen müssen zutreffen. Leer = gilt immer. */
+  bedingungen: z.array(RegelBedingungSchema),
+  wirkung: z.discriminatedUnion("art", [
+    z.object({ art: z.literal("prozent"), wert: z.number() }),
+    z.object({ art: z.literal("betrag"), wert: z.number() }),
+  ]),
+  /** Grund, wie er im Bericht erscheint. */
+  begruendung: z.string(),
+});
+
+export type AnkaufRegel = z.infer<typeof AnkaufRegelSchema>;
+export type SuchStufe = z.infer<typeof SuchStufeSchema>;
+
+/** Vorlagen je Sprache und Anlass. Platzhalter: {{name}}. */
+export const VorlagenSchema = z.record(z.string().min(2), z.record(z.string(), z.string()));
+
+// --- Registry --------------------------------------------------------------
+
+export const EINSTELLUNGEN = {
+  // Bewertung
+  "bewertung.mindestVergleiche": def("bewertung", z.number().int().min(1), 8, "Mindestanzahl bereinigter Vergleichsinserate für eine belastbare Bewertung."),
+  "bewertung.zielVergleiche": def("bewertung", z.number().int().min(1), 40, "Ab dieser Trefferzahl wird die Suche nicht weiter erweitert."),
+  "bewertung.suchStufen": def(
+    "bewertung",
+    z.array(SuchStufeSchema).min(1),
+    [
+      { ezToleranzJahre: 0, kmToleranzProzent: 15, umkreisKm: 200, leistungToleranzProzent: 5 },
+      { ezToleranzJahre: 1, kmToleranzProzent: 25, umkreisKm: 500, leistungToleranzProzent: 10 },
+      { ezToleranzJahre: 2, kmToleranzProzent: 40, umkreisKm: null, leistungToleranzProzent: 15 },
+    ],
+    "Stufen, um die die Vergleichssuche erweitert wird, wenn zu wenige Treffer kommen.",
+  ),
+  "bewertung.ausreisserIqrFaktor": def("bewertung", z.number().positive(), 1.5, "Faktor für die IQR-Ausreißerbereinigung der Vergleichspreise."),
+  "bewertung.mindestPreisEuro": def("bewertung", z.number().nonnegative(), 500, "Inserate unter diesem Preis gelten als Platzhalter (z. B. 1 €) und werden verworfen."),
+  "bewertung.ausschlussBegriffe": def(
+    "bewertung",
+    z.array(z.string()),
+    ["export", "leasingübernahme", "motorschaden", "bastler", "unfallwagen"],
+    "Inserate, deren Titel oder Beschreibung einen dieser Begriffe enthalten, werden verworfen.",
+  ),
+  "bewertung.angebotsAbschlagProzent": def("bewertung", z.number().min(0).max(100), 5, "Abschlag vom Angebotspreis (Inserat) zum erwarteten Verkaufspreis."),
+  "bewertung.kmKorrekturProzentJe10000": def("bewertung", z.number(), 2.5, "Preiskorrektur je 10.000 km Abweichung vom Median der Vergleiche."),
+  "bewertung.alterKorrekturProzentJeJahr": def("bewertung", z.number(), 8, "Preiskorrektur je Jahr Altersabweichung vom Median der Vergleiche."),
+  "bewertung.konfidenzStreuungGrenzeProzent": def("bewertung", z.number().positive(), 15, "Variationskoeffizient der Vergleichspreise, ab dem die Konfidenz sinkt."),
+  "bewertung.rundungEuro": def("bewertung", z.number().int().positive(), 50, "Preise im Bericht werden auf diesen Betrag gerundet."),
+
+  // Ankauf
+  "ankauf.margeProzent": def("ankauf", z.number().min(0).max(100), 12, "Händlermarge vom erwarteten Verkaufspreis."),
+  "ankauf.aufbereitungPauschaleEuro": def("ankauf", z.number().nonnegative(), 400, "Pauschale für Aufbereitung je Fahrzeug."),
+  "ankauf.standkostenEuroJeTag": def("ankauf", z.number().nonnegative(), 15, "Kosten je Standtag bis zum Weiterverkauf."),
+  "ankauf.erwarteteStandtage": def("ankauf", z.number().int().nonnegative(), 30, "Erwartete Standtage, wenn die Vergleichsdaten keine liefern."),
+  "ankauf.spanneProzent": def("ankauf", z.number().min(0).max(50), 5, "Verhandlungsspanne um den Ankaufspreis (von/bis im Angebot)."),
+  "ankauf.regeln": def(
+    "ankauf",
+    z.array(AnkaufRegelSchema),
+    [
+      {
+        id: "scheckheft",
+        bezeichnung: "Scheckheftgepflegt",
+        aktiv: true,
+        bedingungen: [{ feld: "scheckheft", op: "gleich", wert: true }],
+        wirkung: { art: "prozent", wert: 2 },
+        begruendung: "Lückenlose Wartungshistorie",
+      },
+      {
+        id: "hu-faellig",
+        bezeichnung: "HU bald fällig",
+        aktiv: true,
+        bedingungen: [{ feld: "huRestMonate", op: "kleiner", wert: 6 }],
+        wirkung: { art: "betrag", wert: -250 },
+        begruendung: "Hauptuntersuchung in weniger als 6 Monaten fällig",
+      },
+      {
+        id: "repariert",
+        bezeichnung: "Reparierter Vorschaden",
+        aktiv: true,
+        bedingungen: [{ feld: "zustand", op: "gleich", wert: "repariert" }],
+        wirkung: { art: "prozent", wert: -10 },
+        begruendung: "Reparierter Unfallschaden",
+      },
+      {
+        id: "viele-vorbesitzer",
+        bezeichnung: "Viele Vorbesitzer",
+        aktiv: true,
+        bedingungen: [{ feld: "vorbesitzer", op: "groesser", wert: 3 }],
+        wirkung: { art: "prozent", wert: -3 },
+        begruendung: "Mehr als drei Vorbesitzer",
+      },
+      {
+        id: "akku-schwach",
+        bezeichnung: "Akku unter 80 % SoH",
+        aktiv: true,
+        bedingungen: [{ feld: "akkuSohProzent", op: "kleiner", wert: 80 }],
+        wirkung: { art: "prozent", wert: -12 },
+        begruendung: "Eingeschränkte Akku-Gesundheit",
+      },
+    ],
+    "Zu- und Abschläge auf den Ankaufspreis. Prozent wirkt auf den Verkaufspreis, Betrag direkt.",
+  ),
+
+  // Antworten an Kunden
+  "antwort.standardSprache": def("antwort", z.string().min(2), "de", "Sprache, wenn die Kundensprache nicht erkannt wird."),
+  "antwort.vorlagen": def(
+    "antwort",
+    VorlagenSchema,
+    {
+      de: {
+        eingang: "Hallo {{name}}, danke für Ihre Anfrage zum {{fahrzeug}}. Wir melden uns mit einer Einschätzung.",
+        rueckfrage: "Hallo {{name}}, für die Bewertung fehlt uns noch: {{fehlend}}.",
+        angebot: "Hallo {{name}}, für Ihren {{fahrzeug}} können wir {{ankaufVon}} bis {{ankaufBis}} anbieten. Das Angebot gilt bis {{gueltigBis}}.",
+        absage: "Hallo {{name}}, leider können wir Ihnen für den {{fahrzeug}} derzeit kein Angebot machen.",
+        hinweis: "Marktwerteinschätzung auf Basis vergleichbarer Inserate, kein Gutachten.",
+      },
+    },
+    "Antwortvorlagen je Sprache und Anlass. Platzhalter in {{doppelten Klammern}}.",
+  ),
+  "antwort.pflichtangaben": def(
+    "antwort",
+    z.array(z.enum(["erstzulassung", "kilometer", "kraftstoff", "getriebe", "leistungKw", "zustand"])),
+    ["erstzulassung", "kilometer", "kraftstoff"],
+    "Angaben, ohne die keine Bewertung startet; fehlen sie, wird nachgefragt.",
+  ),
+
+  // Ablauf
+  "ablauf.freigabePflicht": def("ablauf", z.literal(true), true, "Jede Bewertung braucht die Freigabe eines Admins. Bewusst nicht abschaltbar."),
+  "ablauf.maxRueckfragen": def("ablauf", z.number().int().min(0), 2, "Höchstzahl automatischer Rückfragen, danach geht die Anfrage an einen Menschen."),
+  "ablauf.rueckfrageTimeoutStunden": def("ablauf", z.number().positive(), 48, "Ohne Antwort nach dieser Zeit geht die Anfrage an einen Menschen."),
+  "ablauf.dublettenFensterTage": def("ablauf", z.number().int().positive(), 14, "Zeitfenster, in dem gleiche Kunde+Fahrzeug als Dublette gilt."),
+  "ablauf.berichtGueltigTage": def("ablauf", z.number().int().positive(), 7, "So lange gilt ein Bericht, danach muss neu bewertet werden."),
+  "ablauf.statusBeschriftungen": def(
+    "ablauf",
+    z.record(z.string(), z.string()),
+    {
+      eingegangen: "Eingegangen",
+      unvollstaendig: "Wartet auf Angaben",
+      in_bewertung: "In Bewertung",
+      zur_freigabe: "Wartet auf Freigabe",
+      nachbearbeiten: "Nachbearbeiten",
+      freigegeben: "Freigegeben",
+      angebot_versendet: "Angebot versendet",
+      verhandlung: "In Verhandlung",
+      besichtigung: "Besichtigung geplant",
+      angekauft: "Angekauft",
+      abgesagt: "Abgesagt",
+      abgelehnt: "Abgelehnt",
+      an_mensch: "Beim Menschen",
+      fehlgeschlagen: "Fehlgeschlagen",
+    },
+    "Anzeigenamen der Status in der Oberfläche.",
+  ),
+
+  // Datenquelle
+  "quelle.mobilede.modus": def("quelle", z.enum(["mock", "live"]), "mock", "mock = Beispieldaten, live = echte mobile.de-Search-API."),
+  "quelle.cacheMinuten": def("quelle", z.number().int().nonnegative(), 360, "Gleiche Suchanfragen werden so lange aus dem Cache bedient."),
+  "quelle.zeitlimitMs": def("quelle", z.number().int().positive(), 10000, "Zeitlimit je Anfrage an die Datenquelle."),
+  "quelle.maxVersuche": def("quelle", z.number().int().min(1), 4, "Versuche je Bewertungsjob, bevor er in die Dead-Letter-Queue geht."),
+
+  // KI
+  "ki.aktiv": def("ki", z.boolean(), false, "Schaltet den optionalen KI-Anschluss ein. Die Bewertung läuft auch ohne."),
+  "ki.faehigkeiten": def(
+    "ki",
+    z.array(z.enum(["freitext_auslesen", "dokument_auslesen", "anfrage_einordnen", "bericht_formulieren", "plausibilitaet"])),
+    [],
+    "Welche Fähigkeiten des KI-Anschlusses genutzt werden.",
+  ),
+  "ki.tagesbudgetEuro": def("ki", z.number().nonnegative(), 5, "Tagesobergrenze für KI-Kosten; darüber wird ohne KI weitergearbeitet."),
+
+  // Betrieb
+  "betrieb.fehlerSpeichernAbSchwere": def("betrieb", z.enum(["info", "warnung", "fehler", "kritisch"]), "warnung", "Ab dieser Schwere landet ein Fehler im Fehlerspeicher."),
+  "betrieb.alarmAbSchwere":def("betrieb", z.enum(["info", "warnung", "fehler", "kritisch"]), "kritisch", "Ab dieser Schwere wird ein Alarm ausgelöst."),
+  "betrieb.fehlerAufbewahrungTage": def("betrieb", z.number().int().positive(), 90, "Fehlereinträge werden nach dieser Zeit gelöscht."),
+  "betrieb.personendatenAufbewahrungTage": def("betrieb", z.number().int().positive(), 365, "Kundendaten abgeschlossener Anfragen werden danach gelöscht (DSGVO)."),
+} as const;
+
+export type EinstellungsSchluessel = keyof typeof EINSTELLUNGEN;
+export type EinstellungsWert<K extends EinstellungsSchluessel> = z.infer<(typeof EINSTELLUNGEN)[K]["schema"]>;
+
+export function istEinstellungsSchluessel(s: string): s is EinstellungsSchluessel {
+  return Object.prototype.hasOwnProperty.call(EINSTELLUNGEN, s);
+}
+
+export const EINSTELLUNGS_SCHLUESSEL = Object.keys(EINSTELLUNGEN) as EinstellungsSchluessel[];

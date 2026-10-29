@@ -1,0 +1,42 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "kfz-bewertung-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kfz-bewertung",
+      // Echte ID nach `wrangler d1 create kfz-bewertung` eintragen (kein Geheimnis).
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Oberste Ebene = Produktion. Ein `wrangler deploy` ohne --env ist damit sicher:
+  // die Access-Prüfung ist an, und ohne ACCESS_* verweigert der Admin-Bereich.
+  "vars": {
+    "UMGEBUNG": "produktion",
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": ""
+  },
+  "env": {
+    // Nur lokal (`npm run dev`, Tests). Überspringt die Access-Prüfung.
+    "entwicklung": {
+      "vars": {
+        "UMGEBUNG": "entwicklung",
+        "ACCESS_TEAM_DOMAIN": "",
+        "ACCESS_AUD": ""
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "kfz-bewertung-dev",
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "migrations"
+        }
+      ]
+    }
+  }
+}

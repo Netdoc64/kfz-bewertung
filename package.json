@@ -1,0 +1,17 @@
+{
+  "name": "kfz-bewertung",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "npm run test --workspaces --if-present",
+    "dev:api": "npm run dev -w @kfz/api"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

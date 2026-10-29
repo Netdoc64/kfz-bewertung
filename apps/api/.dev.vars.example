@@ -1,0 +1,6 @@
+# Nur Namen — Werte verteilt der Business Manager, nie von Hand eintragen.
+# Phase 0 braucht noch keine Geheimnisse. Vorgesehen:
+# MOBILEDE_BENUTZER=
+# MOBILEDE_PASSWORT=
+# WEBHOOK_HMAC_SCHLUESSEL=
+# KI_API_SCHLUESSEL=
