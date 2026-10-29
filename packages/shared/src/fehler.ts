@@ -61,6 +61,7 @@ export const FEHLER = {
   PLAUSIBILITAET_VERLETZT: { status: 422, schwere: "warnung", wiederholbar: false, text: "Das Ergebnis liegt außerhalb der zulässigen Grenzen und wird von einem Menschen geprüft." },
   JOB_VERALTET: { status: 409, schwere: "info", wiederholbar: false, text: "Die Anfrage hat sich geändert; die Bewertung wird neu gestartet." },
   BERICHT_FEHLT: { status: 404, schwere: "warnung", wiederholbar: false, text: "Zu dieser Anfrage gibt es keinen Bericht." },
+  BERICHT_VORLAGE_FEHLT: { status: 500, schwere: "fehler", wiederholbar: false, text: "Für den Bericht ist keine Vorlage hinterlegt." },
   MAIL_UNGUELTIG: { status: 422, schwere: "warnung", wiederholbar: false, text: "Die E-Mail konnte nicht gelesen werden." },
   MAIL_SCHLEIFE: { status: 422, schwere: "warnung", wiederholbar: false, text: "Die E-Mail ist eine automatische Nachricht und wird nicht beantwortet." },
   CRON_FEHLGESCHLAGEN: { status: 500, schwere: "fehler", wiederholbar: true, text: "Eine zeitgesteuerte Aufgabe ist fehlgeschlagen." },
