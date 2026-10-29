@@ -155,7 +155,7 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 ### Phase 2 — Betrieb ohne Aufsicht
 
 - [ ] Cron-Aufgaben aus A5, jede mit Test für Idempotenz
-- [ ] Benachrichtigung und Erinnerung für offene Freigaben (A3)
+- [x] Benachrichtigung und Erinnerung für offene Freigaben (A3)
 - [ ] Alarm mit Ruhezeit je Fingerabdruck (A4)
 - [ ] Dead-Letter-Ansicht mit erneut Einreihen
 - [ ] Kennzahlen-Seite (A12)

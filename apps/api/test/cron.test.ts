@@ -140,18 +140,18 @@ describe("Cron-Lauf über den Scheduler", () => {
     await lauf();
     expect(await zustand()).toEqual(nachErstem);
     const p = await protokoll();
-    expect(p).toHaveLength(10);
-    expect(p.slice(0, 5).map((x) => x.aufgabe)).toEqual(["rueckfrageTimeout", "berichtsablauf", "dsgvoLoeschung", "fehlerAufraeumen", "referenzAbgleich"]);
-    expect(new Set(p.slice(0, 5).map((x) => x.korrelation)).size).toBe(1);
-    expect(p[4]!.status).toBe("uebersprungen");
+    expect(p).toHaveLength(12);
+    expect(p.slice(0, 6).map((x) => x.aufgabe)).toEqual(["rueckfrageTimeout", "freigabeErinnerung", "berichtsablauf", "dsgvoLoeschung", "fehlerAufraeumen", "referenzAbgleich"]);
+    expect(new Set(p.slice(0, 6).map((x) => x.korrelation)).size).toBe(1);
+    expect(p[5]!.status).toBe("uebersprungen");
   });
 
   it("abgeschaltete Aufgaben tun nichts und stehen als aus im Protokoll", async () => {
-    await setze("betrieb.cronAufgaben", { rueckfrageTimeout: false, freigabeErinnerung: true, berichtsablauf: false, dsgvoLoeschung: false, fehlerAufraeumen: false, referenzAbgleich: false });
+    await setze("betrieb.cronAufgaben", { rueckfrageTimeout: false, freigabeErinnerung: false, berichtsablauf: false, dsgvoLoeschung: false, fehlerAufraeumen: false, referenzAbgleich: false });
     await anfrage("alt", "unvollstaendig", vor(3));
     await lauf();
     expect((await zustand()).anfragen[0]!.status).toBe("unvollstaendig");
-    expect((await protokoll()).map((x) => x.status)).toEqual(["aus", "aus", "aus", "aus", "aus"]);
+    expect((await protokoll()).map((x) => x.status)).toEqual(["aus", "aus", "aus", "aus", "aus", "aus"]);
   });
 
   it("eine fehlschlagende Aufgabe meldet CRON_FEHLGESCHLAGEN, die übrigen laufen weiter", async () => {

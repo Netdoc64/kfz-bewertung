@@ -468,6 +468,23 @@ export const EINSTELLUNGEN = {
   "benachrichtigung.erinnerungNachStunden": def("benachrichtigung", z.number().positive(), 4, "Erinnerung, wenn eine Freigabe so lange offen ist.", { max: 72 }),
   "benachrichtigung.eskalationNachStunden": def("benachrichtigung", z.number().positive(), 24, "Eskalation, wenn eine Freigabe so lange offen ist.", { max: 168 }),
 
+  "benachrichtigung.texte": def(
+    "benachrichtigung",
+    z.record(z.string(), z.object({ betreff: z.string().min(1), text: z.string().min(1) })),
+    {
+      neu: { betreff: "Neue Freigabe wartet: {{anfrage}}", text: "Anfrage {{anfrage}} ({{fahrzeug}}) wartet auf Freigabe." },
+      erinnerung: {
+        betreff: "Erinnerung: Freigabe offen seit {{stunden}} h ({{anfrage}})",
+        text: "Anfrage {{anfrage}} ({{fahrzeug}}) wartet seit {{stunden}} Stunden auf Freigabe.",
+      },
+      eskalation: {
+        betreff: "Eskalation: Freigabe offen seit {{stunden}} h ({{anfrage}})",
+        text: "Anfrage {{anfrage}} ({{fahrzeug}}) wartet seit {{stunden}} Stunden auf Freigabe und braucht jetzt eine Entscheidung.",
+      },
+    },
+    "Mailtexte an den Admin je Stufe (neu, erinnerung, eskalation). Platzhalter: {{anfrage}}, {{fahrzeug}}, {{stunden}}.",
+  ),
+
   // Bericht
   "bericht.vorlagen": def(
     "bericht",
