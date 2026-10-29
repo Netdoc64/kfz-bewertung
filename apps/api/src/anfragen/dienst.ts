@@ -60,7 +60,7 @@ export interface AnfrageErgebnis {
   fehlend: string[];
 }
 
-interface Zeile {
+export interface Zeile {
   id: string;
   kanal: string;
   status: Status;
@@ -90,14 +90,14 @@ async function fehlende(einstellungen: Einstellungen, fahrzeug: Fahrzeug): Promi
   return pflicht.filter((feld) => fahrzeug[feld] === undefined);
 }
 
-async function lade(db: D1Database, id: string): Promise<Zeile> {
+export async function lade(db: D1Database, id: string): Promise<Zeile> {
   const z = await db.prepare("SELECT * FROM anfragen WHERE id = ?1").bind(id).first<Zeile>();
   if (!z) throw new AppFehler("NICHT_GEFUNDEN", undefined, { kontext: { anfrageId: id } });
   return z;
 }
 
 /** Statuswechsel nur über `uebergang()`, mit Ereignis und optimistischer Sperre über `version`. */
-async function wechsle(u: AnfrageUmgebung, z: Zeile, aktion: string, durch: Ausloeser, k: AnfrageKontext, notiz?: string): Promise<void> {
+export async function wechsle(u: AnfrageUmgebung, z: Zeile, aktion: string, durch: Ausloeser, k: AnfrageKontext, notiz?: string): Promise<void> {
   const nach = uebergang(z.status, aktion, durch);
   if (!nach) throw new AppFehler("STATUSWECHSEL_UNZULAESSIG", undefined, { kontext: { anfrageId: z.id, status: z.status, aktion } });
   const [upd] = await u.db.batch([
