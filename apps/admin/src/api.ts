@@ -74,7 +74,32 @@ export interface Detail {
   aktionen: Aktion[];
 }
 
-export type Beschriftungen = Record<string, string>;
+export interface EinstellungsEintrag {
+  schluessel: string;
+  wert: unknown;
+  standard: unknown;
+  version: number;
+  quelle: string;
+  gruppe: string;
+  beschreibung: string;
+  geaendertAm: string | null;
+  geaendertVon: string | null;
+}
+
+export interface FehlerEintrag {
+  id: number;
+  code: string;
+  schwere: string;
+  ort: string;
+  nachricht: string;
+  letzteKorrelation: string;
+  anzahl: number;
+  erstmals: string;
+  zuletzt: string;
+  quittiertAm: string | null;
+}
+
+export type Beschriftungen =Record<string, string>;
 
 /** Fehler der API im Format des Fehlerkatalogs. */
 export class ApiFehler extends Error {
@@ -109,6 +134,15 @@ export function erzeugeApi(abruf: Abruf, basis = "/api/admin") {
   return {
     beschriftungen: async (): Promise<Beschriftungen> => (await rufe<{ wert: Beschriftungen }>("/einstellungen/oberflaeche.beschriftungen")).wert,
     statusNamen: async (): Promise<Record<string, string>> => (await rufe<{ wert: Record<string, string> }>("/einstellungen/ablauf.statusBeschriftungen")).wert,
+    einstellungen: (): Promise<{ abdruck: string; eintraege: EinstellungsEintrag[] }> => rufe("/einstellungen"),
+    setzeEinstellung: (schluessel: string, wert: unknown, version: number): Promise<EinstellungsEintrag> =>
+      rufe(`/einstellungen/${encodeURIComponent(schluessel)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ wert, version }),
+      }),
+    fehlerListe: async (offen: boolean): Promise<FehlerEintrag[]> => (await rufe<{ fehler: FehlerEintrag[] }>(`/fehler?offen=${offen ? "ja" : "alle"}`)).fehler,
+    quittiere: (id: number): Promise<{ ok: true }> => rufe(`/fehler/${id}/quittieren`, { method: "POST" }),
     liste(status: string | null, seite: number): Promise<Liste> {
       const q = new URLSearchParams({ seite: String(seite) });
       if (status) q.set("status", status);

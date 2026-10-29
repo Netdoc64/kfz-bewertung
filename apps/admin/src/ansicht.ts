@@ -23,6 +23,13 @@ function meldung(z: Zustand, t: T): string {
   return `<div class="meldung ${m.art}" role="alert">${titel}${esc(m.text)}${kennung}</div>`;
 }
 
+function navigation(z: Zustand, t: T): string {
+  const knopf = (ziel: string, text: string, aktiv: boolean) =>
+    `<button data-nav="${ziel}"${aktiv ? ' disabled aria-current="page"' : ""}>${esc(text)}</button>`;
+  const anfragen = z.ansicht === "liste";
+  return `<nav class="haupt">${knopf("anfragen", t("navAnfragen"), anfragen)} ${knopf("einstellungen", t("navEinstellungen"), z.ansicht === "einstellungen")} ${knopf("fehler", t("navFehler"), z.ansicht === "fehler")}</nav>`;
+}
+
 function filterLeiste(z: Zustand, t: T): string {
   const optionen = Object.entries(z.statusNamen)
     .map(([k, name]) => `<option value="${esc(k)}"${z.filter === k ? " selected" : ""}>${esc(name)}</option>`)
@@ -55,7 +62,7 @@ export function rendereListe(z: Zustand): string {
       `${esc(t("seite"))} ${l.seite} ${esc(t("von"))} ${seiten} ` +
       `<button data-seite="${l.seite + 1}"${l.seite >= seiten ? " disabled" : ""}>${esc(t("vor"))}</button></nav>`;
   } else if (z.laedt) inhalt = `<p>${esc(t("laedt"))}</p>`;
-  return `<h1>${esc(t("titel"))}</h1>${meldung(z, t)}${filterLeiste(z, t)}${inhalt}`;
+  return `${navigation(z, t)}<h1>${esc(t("titel"))}</h1>${meldung(z, t)}${filterLeiste(z, t)}${inhalt}`;
 }
 
 function aktionsLeiste(d: Detail, t: T, gesperrt: boolean): string {
@@ -68,7 +75,7 @@ function aktionsLeiste(d: Detail, t: T, gesperrt: boolean): string {
 export function rendereDetail(z: Zustand): string {
   const t = beschrifter(z);
   const d = z.detail;
-  const kopf = `<button data-zurueck>${esc(t("zurueck"))}</button>${meldung(z, t)}`;
+  const kopf = `${navigation(z, t)}<button data-zurueck>${esc(t("zurueck"))}</button>${meldung(z, t)}`;
   if (!d) return kopf + (z.laedt ? `<p>${esc(t("laedt"))}</p>` : "");
   const a = d.anfrage;
   const ereignisse = d.ereignisse
@@ -91,4 +98,58 @@ export function rendereDetail(z: Zustand): string {
   );
 }
 
-export const rendere = (z: Zustand): string => (z.ansicht === "liste" ? rendereListe(z) : rendereDetail(z));
+const wertText = (w: unknown) => JSON.stringify(w) ?? "";
+
+function bearbeitungsFeld(z: Zustand, t: T): string {
+  const b = z.bearbeitung;
+  const e = z.einstellungen?.find((x) => x.schluessel === b?.schluessel);
+  if (!b || !e) return "";
+  const warnung = b.warnungen.length
+    ? `<div class="meldung konflikt" role="alert">${esc(t("plausibilitaet"))}<ul>${b.warnungen.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div>`
+    : "";
+  const sperre = z.laedt ? " disabled" : "";
+  return (
+    `<section class="bearbeitung"><h2>${esc(e.schluessel)}</h2><p>${esc(e.beschreibung)}</p>${warnung}` +
+    `<label>${esc(t("wert"))}<textarea data-wert rows="12" cols="80">${esc(b.text)}</textarea></label>` +
+    `<p>${esc(t("standardwert"))}: <code>${esc(wertText(e.standard))}</code></p>` +
+    `<button data-speichern${sperre}>${esc(b.warnungen.length ? t("trotzdemSpeichern") : t("speichern"))}</button> ` +
+    `<button data-zuruecksetzen${sperre}>${esc(t("zuruecksetzen"))}</button> <button data-abbrechen>${esc(t("abbrechen"))}</button></section>`
+  );
+}
+
+export function rendereEinstellungen(z: Zustand): string {
+  const t = beschrifter(z);
+  let inhalt = z.laedt && !z.einstellungen ? `<p>${esc(t("laedt"))}</p>` : "";
+  if (z.einstellungen) {
+    const zeilen = z.einstellungen
+      .map(
+        (e) =>
+          `<tr><td>${esc(e.gruppe)}</td><td>${esc(e.schluessel)}</td><td><code>${esc(wertText(e.wert).slice(0, 80))}</code></td><td>${esc(e.version)}</td>` +
+          `<td><button data-bearbeite="${esc(e.schluessel)}">${esc(t("bearbeiten"))}</button></td></tr>`,
+      )
+      .join("");
+    inhalt = `<table><thead><tr><th>${esc(t("gruppe"))}</th><th>${esc(t("einstellungenTitel"))}</th><th>${esc(t("wert"))}</th><th>#</th><th></th></tr></thead><tbody>${zeilen}</tbody></table>`;
+  }
+  return `${navigation(z, t)}<h1>${esc(t("einstellungenTitel"))}</h1>${meldung(z, t)}${bearbeitungsFeld(z, t)}${inhalt}`;
+}
+
+export function rendereFehler(z: Zustand): string {
+  const t = beschrifter(z);
+  let inhalt = z.laedt && !z.fehlerListe ? `<p>${esc(t("laedt"))}</p>` : "";
+  if (z.fehlerListe) {
+    const zeilen = z.fehlerListe
+      .map(
+        (f) =>
+          `<tr><td>${esc(f.schwere)}</td><td>${esc(f.code)}</td><td>${esc(f.ort)}</td><td>${esc(f.nachricht)}</td><td>${esc(f.anzahl)}</td><td>${esc(datum(f.zuletzt))}</td>` +
+          `<td><code>${esc(f.letzteKorrelation)}</code></td><td><button data-quittiere="${esc(f.id)}"${z.laedt ? " disabled" : ""}>${esc(t("quittieren"))}</button></td></tr>`,
+      )
+      .join("");
+    inhalt = z.fehlerListe.length
+      ? `<table><thead><tr><th>${esc(t("fehlerSchwere"))}</th><th>${esc(t("fehlerCode"))}</th><th>${esc(t("fehlerOrt"))}</th><th>${esc(t("fehler"))}</th><th>${esc(t("fehlerAnzahl"))}</th><th>${esc(t("fehlerZuletzt"))}</th><th></th><th></th></tr></thead><tbody>${zeilen}</tbody></table>`
+      : `<p>${esc(t("keineFehler"))}</p>`;
+  }
+  return `${navigation(z, t)}<h1>${esc(t("fehlerTitel"))}</h1>${meldung(z, t)}${inhalt}`;
+}
+
+export const rendere = (z: Zustand): string =>
+  z.ansicht === "liste" ? rendereListe(z) : z.ansicht === "detail" ? rendereDetail(z) : z.ansicht === "einstellungen" ? rendereEinstellungen(z) : rendereFehler(z);
