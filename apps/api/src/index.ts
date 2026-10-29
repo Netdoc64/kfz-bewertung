@@ -2,6 +2,13 @@ import { Hono } from "hono";
 import { adminPflicht } from "./auth/access.js";
 import type { AppUmgebung } from "./env.js";
 import { fehlerBehandlung, grundlage, nichtGefunden } from "./fehler/middleware.js";
+import { verarbeiteEmail } from "./email/index.js";
+import { fuehreCronAus } from "./cron/index.js";
+import { verarbeiteQueue } from "./queue/index.js";
+import { anfragenRouten } from "./routen/anfragen.js";
+import { deadLetterRouten } from "./routen/dead-letter.js";
+import { formularRouten } from "./routen/formular.js";
+import { kennzahlenRouten } from "./routen/kennzahlen.js";
 import { einstellungenRouten } from "./routen/einstellungen.js";
 import { fehlerRouten } from "./routen/fehler.js";
 
@@ -12,13 +19,20 @@ export const app = new Hono<AppUmgebung>()
     await c.env.DB.prepare("SELECT 1").first();
     return c.json({ ok: true, umgebung: c.env.UMGEBUNG });
   })
+  .route("/api/anfragen", formularRouten)
   .use("/api/admin/*", adminPflicht)
   .route("/api/admin/einstellungen", einstellungenRouten)
-  .route("/api/admin/fehler", fehlerRouten);
+  .route("/api/admin/fehler", fehlerRouten)
+  .route("/api/admin/anfragen", anfragenRouten)
+  .route("/api/admin/dead-letter", deadLetterRouten)
+  .route("/api/admin/kennzahlen", kennzahlenRouten);
 
 app.onError(fehlerBehandlung);
 app.notFound(nichtGefunden);
 
 export default {
   fetch: app.fetch,
-} satisfies ExportedHandler<AppUmgebung["Bindings"]>;
+  queue: (batch, env, ctx) => verarbeiteQueue(batch, env, ctx),
+  scheduled: (controller, env, ctx) => fuehreCronAus(controller, env, ctx),
+  email: (nachricht, env, ctx) => verarbeiteEmail(nachricht, env, ctx),
+} satisfies ExportedHandler<AppUmgebung["Bindings"], unknown>;
