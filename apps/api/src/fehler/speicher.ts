@@ -1,4 +1,5 @@
 import { FEHLER, SCHWERE_RANG, type Schwere } from "@kfz/shared";
+import { alarmPruefen } from "../alarm/index.js";
 import type { AppFehler } from "./app-fehler.js";
 
 const SCHWAERZEN = /token|secret|geheim|schluessel|key|passwort|password|auth|cookie|telefon|phone|email|mail|kontakt|fin|kennzeichen/i;
@@ -41,10 +42,11 @@ export async function fingerabdruck(code: string, ort: string, nachricht: string
 }
 
 /**
- * Legt den Fehler ab oder zählt ihn hoch. Wirft nie — ein kaputter
+ * Legt den Fehler ab oder zählt ihn hoch und alarmiert (A4), wenn `email` übergeben
+ * ist. Wirft nie — ein kaputter
  * Fehlerspeicher darf die eigentliche Antwort nicht verhindern.
  */
-export async function fehlerSpeichern(db: D1Database, m: FehlerMeldung, abSchwere: Schwere): Promise<void> {
+export async function fehlerSpeichern(db: D1Database, m: FehlerMeldung, abSchwere: Schwere, email?: SendEmail): Promise<void> {
   const def = FEHLER[m.fehler.code];
   if (SCHWERE_RANG[def.schwere] < SCHWERE_RANG[abSchwere]) return;
   try {
@@ -64,6 +66,7 @@ export async function fehlerSpeichern(db: D1Database, m: FehlerMeldung, abSchwer
       )
       .bind(abdruck, m.fehler.code, def.schwere, m.ort, m.fehler.message.slice(0, 1000), kontext, m.korrelationsId)
       .run();
+    if (email) await alarmPruefen(db, email, { fehler: m.fehler, ort: m.ort, korrelationsId: m.korrelationsId, fingerabdruck: abdruck });
   } catch (e) {
     // Letzte Instanz: nur noch ins Worker-Log, ohne Kontext.
     console.error("Fehlerspeicher nicht erreichbar", { code: m.fehler.code, korrelationsId: m.korrelationsId, grund: String(e) });
