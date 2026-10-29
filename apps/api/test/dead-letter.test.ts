@@ -60,6 +60,19 @@ describe("Dead-Letter: Ablage", () => {
     expect(f).not.toBeNull();
   });
 
+  it("setzt die hängende Anfrage auf fehlgeschlagen und protokolliert es", async () => {
+    await liefere([{ id: "m1", body: job("a1", 2) }]);
+    const a = await env.DB.prepare("SELECT status FROM anfragen WHERE id = 'a1'").first();
+    expect(a).toEqual({ status: "fehlgeschlagen" });
+    const e = await env.DB.prepare("SELECT aktion, notiz FROM anfrage_ereignisse WHERE anfrage_id = 'a1'").first();
+    expect(e).toEqual({ aktion: "fehlschlag", notiz: "DEAD_LETTER" });
+  });
+
+  it("lässt eine Anfrage mit neuerer Generation oder anderem Status unangetastet", async () => {
+    await liefere([{ id: "m1", body: job("a1", 1) }]);
+    expect(await env.DB.prepare("SELECT status FROM anfragen WHERE id = 'a1'").first()).toEqual({ status: "in_bewertung" });
+  });
+
   it("legt dieselbe Nachricht bei doppelter Zustellung nur einmal ab", async () => {
     await liefere([{ id: "m1", body: job("a1") }]);
     await liefere([{ id: "m1", body: job("a1") }]);

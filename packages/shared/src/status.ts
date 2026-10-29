@@ -49,7 +49,7 @@ export const AKTIONEN = [
   // System
   { name: "angaben_fehlen", von: ["eingegangen"], nach: "unvollstaendig", durch: "system" },
   { name: "angaben_ergaenzt", von: ["unvollstaendig"], nach: "eingegangen", durch: "system" },
-  { name: "bewertung_starten", von: ["eingegangen", "nachbearbeiten"], nach: "in_bewertung", durch: "system" },
+  { name: "bewertung_starten", von: ["eingegangen", "nachbearbeiten", "fehlgeschlagen"], nach: "in_bewertung", durch: "system" },
   { name: "bewertung_fertig", von: ["in_bewertung"], nach: "zur_freigabe", durch: "system" },
   { name: "fehlschlag", von: ["in_bewertung"], nach: "fehlgeschlagen", durch: "system" },
   { name: "uebergeben", von: AKTIV, nach: "an_mensch", durch: "system" },
