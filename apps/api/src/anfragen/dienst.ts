@@ -1,6 +1,7 @@
 import { FahrzeugSchema, uebergang, type Ausloeser, type Fahrzeug, type Status } from "@kfz/shared";
 import { z } from "zod";
 import type { Einstellungen } from "../einstellungen/dienst.js";
+import { meldeFreigabe } from "../benachrichtigung/index.js";
 import { AppFehler, alsAppFehler } from "../fehler/app-fehler.js";
 import { fehlerSpeichern } from "../fehler/speicher.js";
 import { sende } from "../versand/index.js";
@@ -113,6 +114,10 @@ export async function wechsle(u: AnfrageUmgebung, z: Zeile, aktion: string, durc
   if (upd!.meta.changes === 0) throw new AppFehler("VERSION_KONFLIKT", undefined, { kontext: { anfrageId: z.id } });
   z.status = nach;
   z.version += 1;
+  if (nach === "zur_freigabe" && u.email) {
+    // A3: der Admin erfährt sofort von der offenen Freigabe; scheitert das, holt der Cron es nach.
+    await meldeFreigabe(u.db, u.einstellungen, u.email, z, "neu", 0).catch((e) => meldeFehler(u, e, "anfragen:freigabe-benachrichtigung", k.korrelation));
+  }
 }
 
 async function meldeFehler(u: AnfrageUmgebung, e: unknown, ort: string, korrelation: string): Promise<void> {

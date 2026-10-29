@@ -3,11 +3,11 @@ import type { Bindings } from "../env.js";
 import { AppFehler, alsAppFehler } from "../fehler/app-fehler.js";
 import { mitFehlerspeicher } from "../fehler/handler.js";
 import { fehlerSpeichern } from "../fehler/speicher.js";
-import { berichtsablauf, dsgvoLoeschung, fehlerAufraeumen, referenzAbgleich, rueckfrageTimeout, type AufgabenErgebnis } from "./aufgaben.js";
+import { berichtsablauf, dsgvoLoeschung, fehlerAufraeumen, freigabeErinnerung, referenzAbgleich, rueckfrageTimeout, type AufgabenErgebnis } from "./aufgaben.js";
 import { holeNach, meldeGeparkte } from "./nachholen.js";
 
-/** Schalter in `betrieb.cronAufgaben`, die diese Datei bedient (freigabeErinnerung hat ein eigenes Thema). */
-type Aufgabe = "rueckfrageTimeout" | "berichtsablauf" | "dsgvoLoeschung" | "fehlerAufraeumen" | "referenzAbgleich";
+/** Schalter in `betrieb.cronAufgaben`, die diese Datei bedient. */
+type Aufgabe = "rueckfrageTimeout" | "freigabeErinnerung" | "berichtsablauf" | "dsgvoLoeschung" | "fehlerAufraeumen" | "referenzAbgleich";
 
 /**
  * Führt eine Aufgabe aus und protokolliert den Lauf in `cron_laeufe`. Ein Fehler wird im
@@ -64,6 +64,7 @@ export async function fuehreCronAus(controller: ScheduledController, env: Bindin
     }
 
     sammle(await laufe(env, "rueckfrageTimeout", schalter.rueckfrageTimeout, korrelationsId, abSchwere, () => rueckfrageTimeout(env.DB, einstellungen, korrelationsId, jetzt)));
+    sammle(await laufe(env, "freigabeErinnerung", schalter.freigabeErinnerung, korrelationsId, abSchwere, () => freigabeErinnerung(env.DB, einstellungen, env.EMAIL, jetzt)));
     sammle(await laufe(env, "berichtsablauf", schalter.berichtsablauf, korrelationsId, abSchwere, () => berichtsablauf(env.DB, korrelationsId, jetzt)));
     sammle(await laufe(env, "dsgvoLoeschung", schalter.dsgvoLoeschung, korrelationsId, abSchwere, () => dsgvoLoeschung(env.DB, einstellungen, jetzt)));
     sammle(await laufe(env, "fehlerAufraeumen", schalter.fehlerAufraeumen, korrelationsId, abSchwere, () => fehlerAufraeumen(env.DB, einstellungen, jetzt)));
@@ -73,4 +74,4 @@ export async function fuehreCronAus(controller: ScheduledController, env: Bindin
   }, env.EMAIL);
 }
 
-export { berichtsablauf, dsgvoLoeschung, fehlerAufraeumen, referenzAbgleich, rueckfrageTimeout };
+export { berichtsablauf, dsgvoLoeschung, fehlerAufraeumen, freigabeErinnerung, referenzAbgleich, rueckfrageTimeout };

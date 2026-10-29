@@ -16,6 +16,7 @@ const NEUE_SCHLUESSEL = [
   "benachrichtigung.kanal",
   "benachrichtigung.erinnerungNachStunden",
   "benachrichtigung.eskalationNachStunden",
+  "benachrichtigung.texte",
   "betrieb.alarmKanal",
   "betrieb.alarmRuheMinuten",
   "betrieb.cronAufgaben",

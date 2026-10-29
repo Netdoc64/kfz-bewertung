@@ -1,3 +1,4 @@
+import { STUFEN, meldeFreigabe, ueberspringeStufe, type Stufe } from "../benachrichtigung/index.js";
 import type { Einstellungen } from "../einstellungen/dienst.js";
 
 /** Ergebnis einer Aufgabe: wie viele Zeilen sie angefasst hat, optional mit Hinweis. */
@@ -38,6 +39,41 @@ export async function rueckfrageTimeout(db: D1Database, einstellungen: Einstellu
     ]);
     n += upd!.meta.changes;
   }
+  return { bearbeitet: n };
+}
+
+/**
+ * Freigabe-Erinnerung (A3): Anfragen in „zur_freigabe“ melden dem Admin die Stufe „neu“
+ * (Nachholen, falls der Wechsel selbst nicht benachrichtigt hat), nach
+ * `benachrichtigung.erinnerungNachStunden` die Erinnerung und nach
+ * `benachrichtigung.eskalationNachStunden` die Eskalation. Je Anfrage, Generation und Stufe
+ * genau eine Mail; ist eine höhere Stufe fällig, entfallen die niedrigeren ohne Mail.
+ */
+export async function freigabeErinnerung(db: D1Database, einstellungen: Einstellungen, email: SendEmail, jetzt = Date.now()): Promise<AufgabenErgebnis> {
+  if ((await einstellungen.lese("benachrichtigung.kanal")) === "aus") return { bearbeitet: 0, uebersprungen: true, notiz: "benachrichtigung.kanal ist aus" };
+  const nachStunden: Record<Stufe, number> = {
+    neu: 0,
+    erinnerung: await einstellungen.lese("benachrichtigung.erinnerungNachStunden"),
+    eskalation: await einstellungen.lese("benachrichtigung.eskalationNachStunden"),
+  };
+  const { results } = await db
+    .prepare("SELECT id, generation, fahrzeug, geaendert_am FROM anfragen WHERE status = 'zur_freigabe'")
+    .all<{ id: string; generation: number; fahrzeug: string; geaendert_am: string }>();
+  let n = 0;
+  let erster: unknown;
+  for (const r of results) {
+    const stunden = (jetzt - Date.parse(r.geaendert_am)) / MS_STUNDE;
+    const faellig = STUFEN.filter((s) => stunden >= nachStunden[s]);
+    const hoechste = faellig[faellig.length - 1];
+    if (!hoechste) continue;
+    try {
+      if (await meldeFreigabe(db, einstellungen, email, r, hoechste, stunden)) n++;
+      for (const s of faellig.slice(0, -1)) await ueberspringeStufe(db, r, s);
+    } catch (e) {
+      erster ??= e;
+    }
+  }
+  if (erster) throw erster;
   return { bearbeitet: n };
 }
 
