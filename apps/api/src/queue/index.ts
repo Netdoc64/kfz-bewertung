@@ -5,5 +5,5 @@ import { mitFehlerspeicher } from "../fehler/handler.js";
 export async function verarbeiteQueue(batch: MessageBatch<unknown>, env: Bindings, _ctx: ExecutionContext): Promise<void> {
   await mitFehlerspeicher(env.DB, `queue ${batch.queue}`, async () => {
     batch.ackAll();
-  });
+  }, env.EMAIL);
 }
