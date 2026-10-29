@@ -40,7 +40,7 @@ interface Zeile {
 function fuelle(vorlage: string, werte: Record<string, string>, anlass: string): string {
   return vorlage.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, name: string) => {
     const w = werte[name];
-    if (w === undefined) throw new AppFehler("VERSAND_FEHLGESCHLAGEN", `Platzhalter ${name} ohne Wert`, { kontext: { anlass, platzhalter: name } });
+    if (w === undefined) throw new AppFehler("VERSAND_VORLAGE_FEHLT", `Platzhalter ${name} ohne Wert`, { kontext: { anlass, platzhalter: name } });
     return w;
   });
 }
@@ -74,7 +74,7 @@ export async function sende(db: D1Database, einstellungen: Einstellungen, a: Ver
   const vorlagen = await einstellungen.lese("antwort.vorlagen");
   const tabelle = vorlagen[sprache] ?? vorlagen[standardSprache];
   const vorlage = tabelle?.[a.anlass];
-  if (!tabelle || !vorlage) throw new AppFehler("VERSAND_FEHLGESCHLAGEN", `Keine Vorlage für ${a.anlass}`, { kontext: { anlass: a.anlass, sprache } });
+  if (!tabelle || !vorlage) throw new AppFehler("VERSAND_VORLAGE_FEHLT", `Keine Vorlage für ${a.anlass}`, { kontext: { anlass: a.anlass, sprache } });
   const werte = a.werte ?? {};
   let inhalt = fuelle(vorlage, werte, a.anlass);
 
