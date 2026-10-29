@@ -42,7 +42,7 @@ beforeEach(async () => {
   jobs = [];
   mails = [];
   await env.DB.exec(
-    "DELETE FROM nachrichten; DELETE FROM anfrage_nachrichten; DELETE FROM eingang_geparkt; DELETE FROM anfrage_ereignisse; DELETE FROM berichte; DELETE FROM anfragen; DELETE FROM einstellungen; DELETE FROM fehler_ereignisse;",
+    "DELETE FROM email_anhaenge; DELETE FROM email_eingang; DELETE FROM nachrichten; DELETE FROM anfrage_nachrichten; DELETE FROM eingang_geparkt; DELETE FROM anfrage_ereignisse; DELETE FROM berichte; DELETE FROM anfragen; DELETE FROM einstellungen; DELETE FROM fehler_ereignisse;",
   );
   await setze("mail.absenderAdresse", "ankauf@example.de");
 });
@@ -305,5 +305,47 @@ describe("Admin-Ansicht geparkter Eingänge", () => {
     expect(await code(await admin(`/${id}/freigeben`, "POST"))).toBe("DUBLETTE");
     const z = await env.DB.prepare("SELECT entscheidung FROM eingang_geparkt WHERE id = ?1").bind(id).first();
     expect(z).toEqual({ entscheidung: null });
+  });
+
+  describe("mail_unklar mit Anhang", () => {
+    async function parkeMail(): Promise<string> {
+      const id = crypto.randomUUID();
+      const nutzlast = { name: "Bernd", betreff: "Mein Auto", text: "Bitte bewerten", messageId: "m1@x" };
+      await env.DB.prepare("INSERT INTO eingang_geparkt (id, kontakt, kanal, nutzlast, grund, korrelation) VALUES (?1, 'bernd@example.de', 'email', ?2, 'mail_unklar', 'k')")
+        .bind(id, JSON.stringify(nutzlast))
+        .run();
+      const schluessel = `anhaenge/geparkt-${id}/a1`;
+      await env.BERICHTE.put(schluessel, new Uint8Array([1, 2, 3]));
+      await env.DB.prepare("INSERT INTO email_anhaenge (id, geparkt_id, r2_schluessel, dateiname, medientyp, groesse) VALUES ('a1', ?1, ?2, 'schein.jpg', 'image/jpeg', 3)").bind(id, schluessel).run();
+      await env.DB.prepare("INSERT INTO email_eingang (message_id, geparkt_id) VALUES ('m1@x', ?1)").bind(id).run();
+      return id;
+    }
+    const freigabe = (id: string, body: unknown) =>
+      app.request(`http://lokal/api/admin/geparkt/${id}/freigeben`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, testEnv());
+
+    it("Detail zeigt Anhänge, Download liefert die Bytes, fremde ID ist 404", async () => {
+      const id = await parkeMail();
+      const d = (await (await admin(`/${id}`)).json()) as { anhaenge: { id: string; dateiname: string }[] };
+      expect(d.anhaenge).toMatchObject([{ id: "a1", dateiname: "schein.jpg" }]);
+      const r = await admin(`/${id}/anhaenge/a1`);
+      expect(r.headers.get("content-type")).toBe("image/jpeg");
+      expect([...new Uint8Array(await r.arrayBuffer())]).toEqual([1, 2, 3]);
+      expect((await admin(`/${id}/anhaenge/gibtsnicht`)).status).toBe(404);
+    });
+
+    it("Freigabe ohne Fahrzeugangaben wird abgewiesen, Eingang bleibt offen", async () => {
+      const id = await parkeMail();
+      expect(await code(await freigabe(id, {}))).toBe("EINGABE_UNGUELTIG");
+      expect(await env.DB.prepare("SELECT entscheidung FROM eingang_geparkt WHERE id = ?1").bind(id).first()).toEqual({ entscheidung: null });
+    });
+
+    it("Freigabe legt die Anfrage an und hängt Anhänge und Mail-Zuordnung um", async () => {
+      const id = await parkeMail();
+      const r = await freigabe(id, { fahrzeug: vollstaendig });
+      expect(r.status).toBe(201);
+      const a = (await r.json()) as { id: string };
+      expect(await env.DB.prepare("SELECT anfrage_id, geparkt_id FROM email_anhaenge").first()).toEqual({ anfrage_id: a.id, geparkt_id: null });
+      expect(await env.DB.prepare("SELECT anfrage_id, geparkt_id FROM email_eingang").first()).toEqual({ anfrage_id: a.id, geparkt_id: null });
+    });
   });
 });

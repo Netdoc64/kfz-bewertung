@@ -172,7 +172,7 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 
 - [ ] Webhook vom Manager mit HMAC + Zeitstempel
 - [ ] Versand über den Manager mit dessen Regeln; jede gesendete Nachricht als Ereignis gespeichert
-- [ ] Bilder (Fahrzeugschein) werden gespeichert und dem Admin gezeigt
+- [x] Bilder (Fahrzeugschein) werden gespeichert und dem Admin gezeigt
 - [ ] Flutschutz je Absender (A9)
 
 ### Phase 5 — Echter mobile.de-Zugang · wartet auf Freischaltung
