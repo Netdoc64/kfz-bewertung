@@ -1,0 +1,23 @@
+Return-Path: <>
+Received: by mail.kfz-beispiel.example (Postfix)
+	id 7A1B2C3D4E; Fri, 17 Oct 2026 11:45:12 +0200 (CEST)
+Date: Fri, 17 Oct 2026 11:45:12 +0200 (CEST)
+From: MAILER-DAEMON@mail.beispiel-host.example (Mail Delivery System)
+To: bewertung@kfz-beispiel.example
+Subject: Undelivered Mail Returned to Sender
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="7A1B2C3D4E.1760694312/mail.beispiel-host.example"
+Message-Id: <20261017094512.7A1B2C3D4E@mail.beispiel-host.example>
+X-Failed-Recipients: unbekannt@beispiel-domain.example
+
+This is a MIME-encapsulated message.
+
+--7A1B2C3D4E.1760694312/mail.beispiel-host.example
+Content-Description: Notification
+Content-Type: text/plain; charset=us-ascii
+
+This is the mail system at host mail.beispiel-host.example.
+I'm sorry to have to inform you that your message could not be delivered.
+--7A1B2C3D4E.1760694312/mail.beispiel-host.example--

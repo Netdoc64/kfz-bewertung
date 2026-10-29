@@ -1,0 +1,19 @@
+Return-Path: <>
+Received: from mail.beispiel-firma.example (10.0.0.5) by mx.example.org with ESMTPS; Thu, 16 Oct 2026 09:30:00 +0200
+From: Microsoft Outlook <MicrosoftExchange329e71ec88ae4615bbc36ab6ce41109e@beispiel-firma.example>
+To: bewertung@kfz-beispiel.example
+Subject: Unzustellbar: Ihre Anfrage zur Fahrzeugbewertung
+Message-ID: <3f2a9c7e1b4d4c0e8a6d@beispiel-firma.example>
+Date: Thu, 16 Oct 2026 07:30:00 +0000
+Content-Language: de-DE
+X-MS-Exchange-Message-Is-Ndr:
+Auto-Submitted: auto-generated
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="b1_7c1d5e8f0a2b3c4d"
+MIME-Version: 1.0
+
+--b1_7c1d5e8f0a2b3c4d
+Content-Type: text/plain; charset="utf-8"
+
+Ihre Nachricht wurde nicht zugestellt (550 5.1.1 RESOLVER.ADR.RecipNotFound).
+--b1_7c1d5e8f0a2b3c4d--
