@@ -83,7 +83,7 @@ async function sendeAngebot(u: AnfrageUmgebung, z: Zeile, k: AnfrageKontext, r2?
   if (!spanne) throw new AppFehler("BERICHT_FEHLT", "Der Bericht enthält keine Angebotsspanne", { kontext: { anfrageId: z.id } });
 
   const kontakt = z.kunde_kontakt ?? "";
-  const kanal = u.kanalFuer ? await u.kanalFuer(kontakt) : u.email ? await kanalFuerKontakt(u.email, u.einstellungen, kontakt) : null;
+  const kanal = u.kanalFuer ? await u.kanalFuer(kontakt) : await kanalFuerKontakt(u.email, u.einstellungen, kontakt, u.manager);
   if (!kanal) throw new AppFehler("VERSAND_FEHLGESCHLAGEN", "Kein Kanal für dieses Angebot", { kontext: { anfrageId: z.id } });
 
   const f = JSON.parse(z.fahrzeug) as Fahrzeug;

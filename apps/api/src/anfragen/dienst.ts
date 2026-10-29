@@ -6,6 +6,7 @@ import { AppFehler, alsAppFehler } from "../fehler/app-fehler.js";
 import { fehlerSpeichern } from "../fehler/speicher.js";
 import { sende } from "../versand/index.js";
 import type { Kanal } from "../versand/kanal.js";
+import type { ManagerZugang } from "../versand/manager.js";
 import { kanalFuerKontakt } from "./kanal.js";
 
 export const AnlegenSchema = z.object({
@@ -40,6 +41,8 @@ export interface AnfrageUmgebung {
   queue: Queue<unknown>;
   /** Für Alarm bei Flut und Fehlern; ohne Binding kein Alarm (Tests). */
   email?: SendEmail;
+  /** Zugang zum Business Manager für WhatsApp-Kontakte; fehlt er, gibt es dafür keinen Kanal. */
+  manager?: Partial<ManagerZugang>;
   /** Kanal für Rückfragen; Standard: E-Mail, wenn der Kontakt eine Adresse ist. */
   kanalFuer?: (kontakt: string) => Promise<Kanal | null>;
 }
@@ -145,7 +148,7 @@ async function rueckfrage(u: AnfrageUmgebung, z: Zeile, fahrzeug: Fahrzeug, fehl
   const kontakt = z.kunde_kontakt ?? "";
   let kanal: Kanal | null = null;
   try {
-    kanal = await (u.kanalFuer ? u.kanalFuer(kontakt) : u.email ? kanalFuerKontakt(u.email, u.einstellungen, kontakt) : Promise.resolve(null));
+    kanal = await (u.kanalFuer ? u.kanalFuer(kontakt) : kanalFuerKontakt(u.email, u.einstellungen, kontakt, u.manager));
   } catch (e) {
     await meldeFehler(u, e, "anfragen:rueckfrage", k.korrelation);
   }

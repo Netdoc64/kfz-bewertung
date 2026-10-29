@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { AnlegenSchema, legeAn } from "../anfragen/index.js";
-import type { AppUmgebung } from "../env.js";
+import { managerZugang, type AppUmgebung } from "../env.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 
 /** Öffentliches Formular: legt Anfragen an, ohne Anmeldung. */
@@ -12,7 +12,7 @@ export const formularRouten = new Hono<AppUmgebung>().post("/", async (c) => {
   if (!p.success) throw new AppFehler("EINGABE_UNGUELTIG", undefined, { details: p.error.issues });
 
   const r = await legeAn(
-    { db: c.env.DB, einstellungen: c.get("einstellungen"), queue: c.env.BEWERTUNG_QUEUE, email: c.env.EMAIL },
+    { db: c.env.DB, einstellungen: c.get("einstellungen"), queue: c.env.BEWERTUNG_QUEUE, email: c.env.EMAIL, manager: managerZugang(c.env) },
     p.data,
     { kanal: "formular", wer: "system", korrelation: c.get("korrelationsId") },
   );

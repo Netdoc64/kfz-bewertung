@@ -1,7 +1,7 @@
 import { Hono, type Context } from "hono";
 import { AktionSchema, AnhaengenSchema, AnlegenSchema, ListeSchema, detailAnfrage, fuehreAktionAus, haengeAn, legeAn, listeAnfragen, type AnfrageUmgebung } from "../anfragen/index.js";
 import { pruefeAnkaufspreis, speichereAnkauf, wertAbweichungAus } from "../auswertung/index.js";
-import type { AppUmgebung } from "../env.js";
+import { managerZugang, type AppUmgebung } from "../env.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 
 async function json(req: Request): Promise<unknown> {
@@ -10,7 +10,7 @@ async function json(req: Request): Promise<unknown> {
   });
 }
 
-const umgebung = (c: Context<AppUmgebung>): AnfrageUmgebung => ({ db: c.env.DB, einstellungen: c.get("einstellungen"), queue: c.env.BEWERTUNG_QUEUE, email: c.env.EMAIL });
+const umgebung = (c: Context<AppUmgebung>): AnfrageUmgebung => ({ db: c.env.DB, einstellungen: c.get("einstellungen"), queue: c.env.BEWERTUNG_QUEUE, email: c.env.EMAIL, manager: managerZugang(c.env) });
 
 export const anfragenRouten = new Hono<AppUmgebung>()
   .get("/", async (c) => {
@@ -35,7 +35,7 @@ export const anfragenRouten = new Hono<AppUmgebung>()
   .post("/", async (c) => {
     const p = AnlegenSchema.safeParse(await json(c.req.raw));
     if (!p.success) throw new AppFehler("EINGABE_UNGUELTIG", undefined, { details: p.error.issues });
-    const u: AnfrageUmgebung = { db: c.env.DB, einstellungen: c.get("einstellungen"), queue: c.env.BEWERTUNG_QUEUE, email: c.env.EMAIL };
+    const u: AnfrageUmgebung = { db: c.env.DB, einstellungen: c.get("einstellungen"), queue: c.env.BEWERTUNG_QUEUE, email: c.env.EMAIL, manager: managerZugang(c.env) };
     const r = await legeAn(u, p.data, { kanal: "admin", wer: c.get("admin"), korrelation: c.get("korrelationsId") });
     return c.json(r, 201);
   })
@@ -43,7 +43,7 @@ export const anfragenRouten = new Hono<AppUmgebung>()
     const roh = await json(c.req.raw);
     const p = AnhaengenSchema.safeParse(roh);
     if (!p.success) throw new AppFehler("EINGABE_UNGUELTIG", undefined, { details: p.error.issues });
-    const u: AnfrageUmgebung = { db: c.env.DB, einstellungen: c.get("einstellungen"), queue: c.env.BEWERTUNG_QUEUE, email: c.env.EMAIL };
+    const u: AnfrageUmgebung = { db: c.env.DB, einstellungen: c.get("einstellungen"), queue: c.env.BEWERTUNG_QUEUE, email: c.env.EMAIL, manager: managerZugang(c.env) };
     const fahrzeugRoh = (roh as { fahrzeug?: object }).fahrzeug;
     const r = await haengeAn(u, c.req.param("id"), p.data, { kanal: "admin", wer: c.get("admin"), korrelation: c.get("korrelationsId") }, fahrzeugRoh);
     return c.json(r);
