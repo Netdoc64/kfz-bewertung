@@ -1,5 +1,6 @@
 import { Hono, type Context } from "hono";
 import { AktionSchema, AnhaengenSchema, AnlegenSchema, ListeSchema, detailAnfrage, fuehreAktionAus, haengeAn, legeAn, listeAnfragen, type AnfrageUmgebung } from "../anfragen/index.js";
+import { pruefeAnkaufspreis, speichereAnkauf, wertAbweichungAus } from "../auswertung/index.js";
 import type { AppUmgebung } from "../env.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 
@@ -17,12 +18,19 @@ export const anfragenRouten = new Hono<AppUmgebung>()
     if (!p.success) throw new AppFehler("EINGABE_UNGUELTIG", undefined, { details: p.error.issues });
     return c.json(await listeAnfragen(umgebung(c), p.data));
   })
+  .get("/auswertung/ankaeufe", async (c) => c.json(await wertAbweichungAus(umgebung(c))))
   .get("/:id", async (c) => c.json(await detailAnfrage(umgebung(c), c.req.param("id"), c.env.BERICHTE)))
   .post("/:id/aktion", async (c) => {
-    const p = AktionSchema.safeParse(await json(c.req.raw));
+    const roh = await json(c.req.raw);
+    const p = AktionSchema.safeParse(roh);
     if (!p.success) throw new AppFehler("EINGABE_UNGUELTIG", undefined, { details: p.error.issues });
     const k = { kanal: "admin" as const, wer: c.get("admin"), korrelation: c.get("korrelationsId") };
-    return c.json(await fuehreAktionAus(umgebung(c), c.req.param("id"), p.data, k, c.env.BERICHTE));
+    // Der Abschluss verlangt den tatsächlichen Preis (A11); ohne ihn bleibt der Status unverändert.
+    const preis = p.data.aktion === "ankauf_abschliessen" ? pruefeAnkaufspreis((roh as { ankaufspreisEuro?: unknown }).ankaufspreisEuro) : null;
+    const id = c.req.param("id");
+    const r = await fuehreAktionAus(umgebung(c), id, p.data, k, c.env.BERICHTE);
+    if (preis !== null) await speichereAnkauf(umgebung(c), id, preis, k.wer);
+    return c.json(r);
   })
   .post("/", async (c) => {
     const p = AnlegenSchema.safeParse(await json(c.req.raw));

@@ -33,6 +33,7 @@ export const FEHLER = {
   // Ablauf
   STATUSWECHSEL_UNZULAESSIG: { status: 409, schwere: "warnung", wiederholbar: false, text: "Dieser Schritt ist im aktuellen Status nicht möglich." },
   VERSION_KONFLIKT: { status: 409, schwere: "info", wiederholbar: false, text: "Der Eintrag wurde zwischenzeitlich geändert. Bitte neu laden." },
+  ANKAUFSPREIS_UNGUELTIG: { status: 422, schwere: "info", wiederholbar: false, text: "Für den Abschluss fehlt der tatsächliche Ankaufspreis oder er ist ungültig." },
   DUBLETTE: { status: 409, schwere: "info", wiederholbar: false, text: "Diese Anfrage liegt bereits vor." },
 
   // Einstellungen
