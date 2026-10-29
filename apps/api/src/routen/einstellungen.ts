@@ -2,6 +2,7 @@ import { istEinstellungsSchluessel } from "@kfz/shared";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppUmgebung } from "../env.js";
+import { ladeLetzteBerichte, pruefeVorschauWert, rechneVorschau } from "../bewertung/vorschau.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 
 const SetzenSchema = z.object({
@@ -9,6 +10,8 @@ const SetzenSchema = z.object({
   wert: z.unknown(),
   version: z.number().int().nonnegative(),
 });
+
+const VorschauSchema = z.object({ wert: z.unknown() });
 
 function schluessel(s: string) {
   if (!istEinstellungsSchluessel(s)) throw new AppFehler("EINSTELLUNG_UNBEKANNT", `Einstellung ${s} gibt es nicht`);
@@ -35,6 +38,19 @@ export const einstellungenRouten = new Hono<AppUmgebung>()
   .get("/:schluessel/verlauf", async (c) => {
     const k = schluessel(c.req.param("schluessel"));
     return c.json({ verlauf: await c.get("einstellungen").verlauf(k, 50) });
+  })
+  // Rechnet die letzten Berichte mit dem neuen Wert neu, ohne zu speichern (A10).
+  .post("/:schluessel/vorschau", async (c) => {
+    const k = schluessel(c.req.param("schluessel"));
+    const p = VorschauSchema.safeParse(await json(c.req.raw));
+    if (!p.success || !("wert" in (p.data ?? {}))) {
+      throw new AppFehler("EINGABE_UNGUELTIG", "Erwartet { wert }", { details: p.success ? undefined : p.error.issues });
+    }
+    const e = c.get("einstellungen");
+    const neu = pruefeVorschauWert(k, p.data.wert ?? null);
+    const anzahl = await e.lese("einstellungen.vorschauAnzahl");
+    const zeilen = await rechneVorschau(e, k, neu, await ladeLetzteBerichte(c.env.DB, anzahl), new Date());
+    return c.json({ schluessel: k, anzahl: zeilen.length, geaendert: zeilen.filter((z) => z.geaendert).length, zeilen });
   })
   .put("/:schluessel", async (c) => {
     const k = schluessel(c.req.param("schluessel"));

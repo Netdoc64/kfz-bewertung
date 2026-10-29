@@ -148,7 +148,7 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 - [x] Bericht als HTML (Vorlagen aus Einstellungen), gespeichert mit Abdruck
 - [x] Admin-Web-App (`apps/admin`): Liste mit Statusfilter und Seiten, Detail mit Bericht/Ereignissen/Nachrichten, Freigabe-Aktionen mit Version und Neuladen bei `VERSION_KONFLIKT`
 - [x] Admin-Web-App: Einstellungen bearbeiten (Version, Plausibilitätswarnung mit bewusstem Speichern, Zurücksetzen auf Standard), Fehlerliste mit Quittieren
-- [ ] Vorschau (A10): letzte N Berichte mit neuem Wert neu rechnen und Unterschied zeigen (Server-Route + Anzeige in der Einstellungen-Ansicht)
+- [x] Vorschau (A10): letzte N Berichte mit neuem Wert neu rechnen und Unterschied zeigen (Server-Route + Anzeige in der Einstellungen-Ansicht)
 - [ ] Ende-zu-Ende-Test: Anfrage → `zur_freigabe` → `freigegeben` → `angebot_versendet` (Versand gemockt)
 - [ ] Not-Aus (A2) im Ende-zu-Ende-Test geprüft: bei `aus` geht nichts raus
 

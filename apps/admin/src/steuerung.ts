@@ -1,5 +1,5 @@
 import { plausibilitaetsWarnungen, type EinstellungsSchluessel } from "@kfz/shared";
-import { ApiFehler, type Api, type Beschriftungen, type Detail, type EinstellungsEintrag, type FehlerEintrag, type Liste } from "./api.js";
+import { ApiFehler, type Api, type Beschriftungen, type Detail, type EinstellungsEintrag, type FehlerEintrag, type Liste, type Vorschau } from "./api.js";
 
 export interface Meldung {
   art: "konflikt" | "fehler";
@@ -13,6 +13,8 @@ export interface Bearbeitung {
   schluessel: string;
   text: string;
   warnungen: string[];
+  /** Vorschau (A10) für genau diesen Text; ändert sich der Text, gilt sie nicht mehr. */
+  vorschau: { text: string; ergebnis: Vorschau } | null;
 }
 
 export interface Zustand {
@@ -99,13 +101,13 @@ export class Steuerung {
   bearbeite(schluessel: string): void {
     const e = this.zustand.einstellungen?.find((x) => x.schluessel === schluessel);
     if (!e) return;
-    this.setze({ bearbeitung: { schluessel, text: JSON.stringify(e.wert, null, 2), warnungen: [] }, meldung: null });
+    this.setze({ bearbeitung: { schluessel, text: JSON.stringify(e.wert, null, 2), warnungen: [], vorschau: null }, meldung: null });
   }
 
   /** Tippen zeichnet nicht neu, sonst verliert das Textfeld den Fokus. */
   tippe(text: string): void {
     const b = this.zustand.bearbeitung;
-    if (b) this.zustand = { ...this.zustand, bearbeitung: { ...b, text } };
+    if (b) this.zustand = { ...this.zustand, bearbeitung: { ...b, text, vorschau: null } };
   }
 
   brichAb(): void {
@@ -131,6 +133,21 @@ export class Steuerung {
       const warnungen = plausibilitaetsWarnungen(eintrag.schluessel as EinstellungsSchluessel, wert);
       if (warnungen.length && b.warnungen.join() !== warnungen.join()) {
         this.setze({ bearbeitung: { ...b, warnungen }, meldung: null });
+        return;
+      }
+    }
+    // Vorschau (A10): erst anzeigen, dann erst auf ein zweites Speichern hin schreiben. Zurücksetzen zeigt sie für den Standardwert.
+    const vorschauText = zuruecksetzen ? "" : b.text;
+    if (b.vorschau?.text !== vorschauText) {
+      this.setze({ laedt: true, meldung: null });
+      try {
+        const ergebnis = await this.api.vorschau(eintrag.schluessel, wert);
+        const jetzt = this.zustand.bearbeitung;
+        this.setze({ laedt: false, bearbeitung: jetzt ? { ...jetzt, vorschau: { text: vorschauText, ergebnis } } : jetzt });
+        // Gibt es nichts zu zeigen (keine Berichte oder Vorschau aus), ist ein zweiter Klick sinnlos.
+        if (ergebnis.anzahl > 0) return;
+      } catch (e) {
+        this.fehler(e);
         return;
       }
     }
