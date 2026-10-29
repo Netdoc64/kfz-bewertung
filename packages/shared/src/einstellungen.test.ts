@@ -96,6 +96,7 @@ describe("Fehlercodes für Phase 1–3", () => {
     "PLAUSIBILITAET_VERLETZT",
     "JOB_VERALTET",
     "BERICHT_FEHLT",
+    "BERICHT_VORLAGE_FEHLT",
     "MAIL_UNGUELTIG",
     "MAIL_SCHLEIFE",
     "CRON_FEHLGESCHLAGEN",

@@ -363,6 +363,12 @@ export const EINSTELLUNGEN = {
         html:
           "<h1>Fahrzeugbewertung</h1><p>{{fahrzeug}}</p>" +
           "<p>Ankaufspreis: {{ankaufVon}} bis {{ankaufBis}}</p>" +
+          "<p>Marktpreis: {{marktpreis}}, Verkaufspreis: {{verkaufspreis}}</p>" +
+          "<p>Suchstufe {{suchstufeNr}} von {{suchstufeAnzahl}}: Erstzulassung ±{{suchstufeEzJahre}} Jahre, " +
+          "Kilometer ±{{suchstufeKmProzent}} %, Umkreis {{suchstufeUmkreisKm}} km</p>" +
+          "<h2>Vergleichsfahrzeuge ({{anzahlVergleiche}})</h2>" +
+          "<table><tr><th>Preis</th><th>Kilometer</th><th>Erstzulassung</th></tr>{{vergleichsZeilen}}</table>" +
+          "<h2>Angewendete Regeln</h2><ul>{{regelnListe}}</ul>" +
           "<p>Gültig bis {{gueltigBis}}.</p><p><small>{{hinweis}}</small></p>",
         hinweis: "Marktwerteinschätzung auf Basis vergleichbarer Inserate, kein Gutachten.",
       },

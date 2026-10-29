@@ -145,7 +145,7 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 - [x] Bewertungskern: Suchstufen, Filter, IQR, Median, km/Alter-Korrektur, Konfidenz
 - [ ] Regel-Engine für `ankauf.regeln` mit allen Operatoren, Deckel aus A7
 - [x] Goldene Testfälle: fester Datensatz + Einstellungen → exakt erwartete Preise
-- [ ] Bericht als HTML (Vorlagen aus Einstellungen), gespeichert mit Abdruck
+- [x] Bericht als HTML (Vorlagen aus Einstellungen), gespeichert mit Abdruck
 - [ ] Admin-Web-App: Liste, Detail, Freigabe-Aktionen, Einstellungen bearbeiten mit Vorschau (A10), Fehlerliste
 - [ ] Ende-zu-Ende-Test: Anfrage → `zur_freigabe` → `freigegeben` → `angebot_versendet` (Versand gemockt)
 - [ ] Not-Aus (A2) im Ende-zu-Ende-Test geprüft: bei `aus` geht nichts raus
