@@ -174,6 +174,18 @@ export const EINSTELLUNGEN = {
     "Größte zulässige Spanne zwischen erwartetem Verkaufspreis und Ankaufspreis in Prozent.",
     { max: 40 },
   ),
+  "ankauf.segmentGrenzenEuro": def(
+    "ankauf",
+    z.array(z.number().positive()).max(20),
+    [5000, 15000, 30000],
+    "Obergrenzen der Preissegmente (aufsteigend, in Euro, nach geschätztem Ankaufspreis) für die Auswertung der Abweichung zwischen Schätzung und tatsächlichem Ankauf.",
+  ),
+  "ankauf.auswertungMindestAnzahl": def(
+    "ankauf",
+    z.number().int().positive(),
+    5,
+    "Ab so vielen Ankäufen je Marke und Segment gilt die Abweichung in der Auswertung als belastbar.",
+  ),
   "ankauf.regeln": def(
     "ankauf",
     z.array(AnkaufRegelSchema),
