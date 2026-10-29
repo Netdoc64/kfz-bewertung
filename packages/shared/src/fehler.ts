@@ -53,6 +53,20 @@ export const FEHLER = {
   KI_NICHT_AKTIV: { status: 503, schwere: "info", wiederholbar: false, text: "Der KI-Anschluss ist nicht aktiv." },
   KI_FEHLER: { status: 502, schwere: "warnung", wiederholbar: true, text: "Der KI-Anschluss hat nicht geantwortet." },
 
+  // Autonomie und Betrieb
+  AUTOPILOT_GESPERRT: { status: 423, schwere: "info", wiederholbar: false, text: "Der automatische Betrieb ist gerade angehalten." },
+  FREIGABE_FEHLT: { status: 403, schwere: "warnung", wiederholbar: false, text: "Für diese Nachricht fehlt die Freigabe eines Admins." },
+  VERSAND_FEHLGESCHLAGEN: { status: 502, schwere: "fehler", wiederholbar: true, text: "Die Nachricht konnte nicht versendet werden." },
+  ZU_VIELE_ANFRAGEN: { status: 429, schwere: "warnung", wiederholbar: false, text: "Zu viele Anfragen von diesem Absender. Bitte später erneut versuchen." },
+  PLAUSIBILITAET_VERLETZT: { status: 422, schwere: "warnung", wiederholbar: false, text: "Das Ergebnis liegt außerhalb der zulässigen Grenzen und wird von einem Menschen geprüft." },
+  JOB_VERALTET: { status: 409, schwere: "info", wiederholbar: false, text: "Die Anfrage hat sich geändert; die Bewertung wird neu gestartet." },
+  BERICHT_FEHLT: { status: 404, schwere: "warnung", wiederholbar: false, text: "Zu dieser Anfrage gibt es keinen Bericht." },
+  MAIL_UNGUELTIG: { status: 422, schwere: "warnung", wiederholbar: false, text: "Die E-Mail konnte nicht gelesen werden." },
+  MAIL_SCHLEIFE: { status: 422, schwere: "warnung", wiederholbar: false, text: "Die E-Mail ist eine automatische Nachricht und wird nicht beantwortet." },
+  CRON_FEHLGESCHLAGEN: { status: 500, schwere: "fehler", wiederholbar: true, text: "Eine zeitgesteuerte Aufgabe ist fehlgeschlagen." },
+  ALARM_FEHLGESCHLAGEN: { status: 502, schwere: "kritisch", wiederholbar: true, text: "Der Alarm konnte nicht zugestellt werden." },
+  DEAD_LETTER: { status: 500, schwere: "kritisch", wiederholbar: false, text: "Ein Auftrag ist endgültig fehlgeschlagen und wartet auf einen Menschen." },
+
   // Technik
   DATENBANK: { status: 500, schwere: "kritisch", wiederholbar: true, text: "Interner Speicherfehler." },
   INTERN: { status: 500, schwere: "kritisch", wiederholbar: false, text: "Interner Fehler." },
