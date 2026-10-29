@@ -149,6 +149,10 @@ async function rueckfrage(u: AnfrageUmgebung, z: Zeile, fahrzeug: Fahrzeug, fehl
     return;
   }
   const nummer = z.rueckfragen + 1;
+  const standardSprache = await u.einstellungen.lese("antwort.standardSprache");
+  const beschriftungen = await u.einstellungen.lese("antwort.feldBeschriftungen");
+  const tabelle = beschriftungen[z.sprache ?? standardSprache] ?? beschriftungen[standardSprache] ?? {};
+  const fehlendText = fehlend.map((feld) => tabelle[feld] ?? feld).join(", ");
   try {
     await sende(u.db, u.einstellungen, {
       kanal,
@@ -156,7 +160,7 @@ async function rueckfrage(u: AnfrageUmgebung, z: Zeile, fahrzeug: Fahrzeug, fehl
       anlass: "rueckfrage",
       anfrageId: z.id,
       ...(z.sprache ? { sprache: z.sprache } : {}),
-      werte: { name: z.kunde_name ?? "", fahrzeug: `${fahrzeug.marke} ${fahrzeug.modell}`, fehlend: fehlend.join(", ") },
+      werte: { name: z.kunde_name ?? "", fahrzeug: `${fahrzeug.marke} ${fahrzeug.modell}`, fehlend: fehlendText },
       korrelation: k.korrelation,
       schluessel: `rueckfrage:${z.id}:${nummer}`,
     });

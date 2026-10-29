@@ -85,16 +85,22 @@ describe("Pflichtangaben und Rückfragen", () => {
     expect(jobs).toHaveLength(0);
     expect(mails).toHaveLength(1);
     expect(mails[0]!.to).toBe("anna@example.de");
-    expect(mails[0]!.text).toContain("erstzulassung, kilometer");
+    expect(mails[0]!.text).toContain("Erstzulassung (Monat und Jahr), Kilometerstand");
     expect((await zeile(b.id))!.rueckfragen).toBe(1);
     expect((await ereignisse(b.id)).map((e) => e.aktion)).toEqual(["angelegt", "angaben_fehlen"]);
+  });
+
+  it("Feldbeschriftungen kommen aus der Einstellung; ohne Eintrag steht der Feldname", async () => {
+    await setze("antwort.feldBeschriftungen", { de: { erstzulassung: "Datum der Erstzulassung" } });
+    await post("/api/anfragen", eingabe({}, luecke));
+    expect(mails[0]!.text).toContain("Datum der Erstzulassung, kilometer");
   });
 
   it("Pflichtangaben kommen aus der Einstellung", async () => {
     await setze("antwort.pflichtangaben", ["getriebe"]);
     const r = await post("/api/anfragen", eingabe({}, luecke));
     expect(((await r.json()) as { status: string }).status).toBe("unvollstaendig");
-    expect(mails[0]!.text).toContain("getriebe");
+    expect(mails[0]!.text).toContain("Getriebe");
   });
 
   it("Antwort mit den Angaben → eingegangen, Job mit höherer Generation", async () => {

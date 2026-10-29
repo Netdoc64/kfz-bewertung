@@ -253,6 +253,21 @@ export const EINSTELLUNGEN = {
     },
     "Antwortvorlagen je Sprache und Anlass. Platzhalter in {{doppelten Klammern}}.",
   ),
+  "antwort.feldBeschriftungen": def(
+    "antwort",
+    z.record(z.string(), z.record(z.string(), z.string())),
+    {
+      de: {
+        erstzulassung: "Erstzulassung (Monat und Jahr)",
+        kilometer: "Kilometerstand",
+        kraftstoff: "Kraftstoffart",
+        getriebe: "Getriebe",
+        leistungKw: "Leistung in kW",
+        zustand: "Zustand des Fahrzeugs",
+      },
+    },
+    "Kundentexte für Fahrzeugangaben je Sprache, eingesetzt als {{fehlend}} in Rückfragen. Fehlt ein Eintrag, steht der Feldname."
+  ),
   "antwort.pflichtangaben": def(
     "antwort",
     z.array(z.enum(["erstzulassung", "kilometer", "kraftstoff", "getriebe", "leistungKw", "zustand"])),
