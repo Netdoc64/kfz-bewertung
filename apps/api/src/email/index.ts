@@ -1,12 +1,13 @@
 import type { Bindings } from "../env.js";
 import { Einstellungen } from "../einstellungen/dienst.js";
 import { mitFehlerspeicher } from "../fehler/handler.js";
+import { verarbeiteEingang } from "./eingang.js";
 import { pruefeSchleifenschutz } from "./schleifenschutz.js";
 
 /**
  * Einstieg für eingehende E-Mail. Der Schleifenschutz läuft zuerst: Autoreply,
  * Bounce, Listenpost und eigene Absender werden verworfen und nur protokolliert —
- * nie beantwortet.
+ * nie beantwortet. Danach liest `verarbeiteEingang` die Anfrage aus der Mail.
  */
 export async function verarbeiteEmail(nachricht: ForwardableEmailMessage, env: Bindings, _ctx: ExecutionContext): Promise<void> {
   await mitFehlerspeicher(
@@ -22,7 +23,9 @@ export async function verarbeiteEmail(nachricht: ForwardableEmailMessage, env: B
       const urteil = pruefeSchleifenschutz({ kopfzeilen: nachricht.headers, umschlagAbsender: nachricht.from, eigeneAdressen: eigene });
       if (urteil.verwerfen) {
         console.warn("EMAIL_VERWORFEN", { grund: urteil.grund, detail: urteil.detail, korrelationsId });
+        return;
       }
+      await verarbeiteEingang(nachricht, env, einst, korrelationsId);
     },
     env.EMAIL,
   );
