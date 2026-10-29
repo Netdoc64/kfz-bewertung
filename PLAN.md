@@ -141,7 +141,7 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 - [ ] Anfrage anlegen über Formular-API und Admin; Pflichtangaben-Prüfung → `unvollstaendig`
 - [ ] Dublettenerkennung im Zeitfenster
 - [ ] Bewertungs-Job über Queue, idempotent, mit Job-Generation (A8)
-- [ ] Mock-mobile.de-Adapter mit festen Beispieldaten (≥ 3 Fahrzeugsegmente)
+- [x] Mock-mobile.de-Adapter mit festen Beispieldaten (≥ 3 Fahrzeugsegmente)
 - [ ] Bewertungskern: Suchstufen, Filter, IQR, Median, km/Alter-Korrektur, Konfidenz
 - [ ] Regel-Engine für `ankauf.regeln` mit allen Operatoren, Deckel aus A7
 - [ ] Goldene Testfälle: fester Datensatz + Einstellungen → exakt erwartete Preise
