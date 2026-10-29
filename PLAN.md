@@ -135,15 +135,15 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 - [x] Statusmaschine inkl. Freigabe und Abwicklung, KI-Port
 - [x] Admin-Bereich hinter Cloudflare Access, Produktion als Standard-Umgebung
 
-### Phase 1 — Durchstich Anfrage → Bericht (mit Mock-Daten)
+### Phase 1 — Durchstich Anfrage → Bericht (mit Mock-Daten) · **fertig**
 
-- [ ] Autonomie-Einstellungen A1, A2, A6, A7, A9, A10 in der Registry, mit Tests
+- [x] Autonomie-Einstellungen A1, A2, A6, A7, A9, A10 in der Registry, mit Tests
 - [x] Anfrage anlegen über Formular-API und Admin; Pflichtangaben-Prüfung → `unvollstaendig`
 - [x] Dublettenerkennung im Zeitfenster
-- [ ] Bewertungs-Job über Queue, idempotent, mit Job-Generation (A8)
+- [x] Bewertungs-Job über Queue, idempotent, mit Job-Generation (A8)
 - [x] Mock-mobile.de-Adapter mit festen Beispieldaten (≥ 3 Fahrzeugsegmente)
 - [x] Bewertungskern: Suchstufen, Filter, IQR, Median, km/Alter-Korrektur, Konfidenz
-- [ ] Regel-Engine für `ankauf.regeln` mit allen Operatoren, Deckel aus A7
+- [x] Regel-Engine für `ankauf.regeln` mit allen Operatoren, Deckel aus A7
 - [x] Goldene Testfälle: fester Datensatz + Einstellungen → exakt erwartete Preise
 - [x] Bericht als HTML (Vorlagen aus Einstellungen), gespeichert mit Abdruck
 - [x] Admin-Web-App (`apps/admin`): Liste mit Statusfilter und Seiten, Detail mit Bericht/Ereignissen/Nachrichten, Freigabe-Aktionen mit Version und Neuladen bei `VERSION_KONFLIKT`
@@ -152,21 +152,21 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 - [x] Ende-zu-Ende-Test: Anfrage → `zur_freigabe` → `freigegeben` → `angebot_versendet` (Versand gemockt)
 - [x] Not-Aus (A2) im Ende-zu-Ende-Test geprüft: bei `aus` geht nichts raus
 
-### Phase 2 — Betrieb ohne Aufsicht
+### Phase 2 — Betrieb ohne Aufsicht · **fertig**
 
 - [x] Cron-Aufgaben aus A5, jede mit Test für Idempotenz
 - [x] Benachrichtigung und Erinnerung für offene Freigaben (A3)
-- [ ] Alarm mit Ruhezeit je Fingerabdruck (A4)
+- [x] Alarm mit Ruhezeit je Fingerabdruck (A4)
 - [x] Dead-Letter-Ansicht mit erneut Einreihen
 - [x] Kennzahlen-Seite (A12)
 - [x] Erfassung des tatsächlichen Ankaufspreises (A11)
 
-### Phase 3 — E-Mail-Eingang
+### Phase 3 — E-Mail-Eingang · **fertig**
 
 - [x] Cloudflare Email Routing → Worker, Anfrage aus Mail (Text + Anhänge)
 - [x] Schleifenschutz: Autoreply/Bounce erkannt und verworfen (Tests mit echten Header-Beispielen)
-- [ ] Antworten ohne Preis (A1) per Mail, Antworten mit Preis nur nach Freigabe
-- [ ] Datenschutzhinweis in der ersten Antwort (A14)
+- [x] Antworten ohne Preis (A1) per Mail, Antworten mit Preis nur nach Freigabe
+- [x] Datenschutzhinweis in der ersten Antwort (A14)
 
 ### Phase 4 — WhatsApp-Eingang über den Manager
 
