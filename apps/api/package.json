@@ -8,6 +8,7 @@
     "deploy": "wrangler deploy",
     "db:migrate:lokal": "wrangler d1 migrations apply kfz-bewertung-dev --local --env entwicklung",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "openapi": "vitest run --config src/openapi/vitest.config.ts",
     "typegen": "wrangler types"
   },

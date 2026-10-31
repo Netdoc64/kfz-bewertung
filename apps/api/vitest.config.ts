@@ -10,6 +10,14 @@ export default defineConfig(async () => {
         miniflare: { bindings: { TEST_MIGRATIONS: migrations } },
       }),
     ],
-    test: { setupFiles: ["./test/migrationen.ts"] },
+    test: {
+      setupFiles: ["./test/migrationen.ts"],
+      coverage: {
+        provider: "istanbul" as const,
+        include: ["src/**/*.ts"],
+        exclude: ["src/openapi/**"],
+        thresholds: { lines: 85, branches: 75 },
+      },
+    },
   };
 });
