@@ -1,5 +1,6 @@
 import type { Bindings } from "../env.js";
 import { Einstellungen } from "../einstellungen/dienst.js";
+import type { KiAbhaengigkeiten } from "../ki/index.js";
 import { mitFehlerspeicher } from "../fehler/handler.js";
 import { verarbeiteEingang } from "./eingang.js";
 import { pruefeSchleifenschutz } from "./schleifenschutz.js";
@@ -9,7 +10,7 @@ import { pruefeSchleifenschutz } from "./schleifenschutz.js";
  * Bounce, Listenpost und eigene Absender werden verworfen und nur protokolliert —
  * nie beantwortet. Danach liest `verarbeiteEingang` die Anfrage aus der Mail.
  */
-export async function verarbeiteEmail(nachricht: ForwardableEmailMessage, env: Bindings, _ctx: ExecutionContext): Promise<void> {
+export async function verarbeiteEmail(nachricht: ForwardableEmailMessage, env: Bindings, _ctx: ExecutionContext, ki: KiAbhaengigkeiten = {}): Promise<void> {
   await mitFehlerspeicher(
     env.DB,
     "email",
@@ -25,7 +26,7 @@ export async function verarbeiteEmail(nachricht: ForwardableEmailMessage, env: B
         console.warn("EMAIL_VERWORFEN", { grund: urteil.grund, detail: urteil.detail, korrelationsId });
         return;
       }
-      await verarbeiteEingang(nachricht, env, einst, korrelationsId);
+      await verarbeiteEingang(nachricht, env, einst, korrelationsId, ki);
     },
     env.EMAIL,
   );

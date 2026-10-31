@@ -1,5 +1,6 @@
-import { FahrzeugSchema, type Fahrzeug } from "@kfz/shared";
+import { FahrzeugSchema, type Einordnung, type Fahrzeug } from "@kfz/shared";
 import PostalMime, { type Attachment, type Email } from "postal-mime";
+import { kiFuer, type KiAbhaengigkeiten } from "../ki/index.js";
 import { haengeAn, legeAn, type AnfrageKontext, type AnfrageUmgebung } from "../anfragen/dienst.js";
 import type { Bindings } from "../env.js";
 import { Einstellungen } from "../einstellungen/dienst.js";
@@ -161,7 +162,7 @@ async function merke(db: D1Database, messageId: string | undefined, b: Besitzer)
  * Ohne sicher erkannte Marke und Modell wird die Mail geparkt und höchstens
  * eine Rückfrage gesendet, statt zu raten.
  */
-export async function verarbeiteEingang(nachricht: ForwardableEmailMessage, env: Bindings, einst: Einstellungen, korrelation: string): Promise<void> {
+export async function verarbeiteEingang(nachricht: ForwardableEmailMessage, env: Bindings, einst: Einstellungen, korrelation: string, ki: KiAbhaengigkeiten = {}): Promise<void> {
   const roh = await leseRoh(nachricht, await einst.lese("mail.maxGroesseBytes"));
   const mail = await parse(roh);
 
@@ -197,6 +198,22 @@ export async function verarbeiteEingang(nachricht: ForwardableEmailMessage, env:
 
   // A8: Antwort auf eine bekannte Anfrage desselben Absenders hängt die Nachricht an.
   const zielId = await findeAntwortZiel(env.DB, bezugsIds(mail), absender);
+
+  // Einordnung (optional): nur ein Etikett für den Weg, nie ein Preis, ein Empfänger oder ein Status.
+  // null (KI aus, Fehler, refusal, Budget) heißt: der regelbasierte Weg unten, unverändert.
+  const einordnung = await ordneEin(env, einst, betreff, text, zielId, korrelation, ki);
+  if (einordnung === "spam") {
+    console.warn("EMAIL_VERWORFEN", { grund: "ki_spam", korrelation });
+    await merke(env.DB, mail.messageId, {});
+    return;
+  }
+  const anMensch = einordnung === "sonstiges" ? "ki_sonstiges" : einordnung === "rueckfrage_antwort" && !zielId ? "ki_rueckfrage_unzuordenbar" : null;
+  if (anMensch) {
+    const nameMensch = mail.from?.name?.trim() || absender.split("@")[0]!;
+    await parkeFuerMensch(env, einst, { kontakt: absender, name: nameMensch, betreff, text, anhaenge: mail.attachments ?? [], mail, korrelation }, anMensch);
+    return;
+  }
+
   if (zielId) {
     if (text !== "" || Object.keys(auslese.fahrzeug).length > 0) {
       const fahrzeug = auslese.fahrzeug;
@@ -240,6 +257,24 @@ export async function verarbeiteEingang(nachricht: ForwardableEmailMessage, env:
     }
     throw e;
   }
+}
+
+/** Fragt den KI-Anschluss, falls er die Fähigkeit hat; jeder Fehlschlag ist null und wurde vom Adapter schon mit Fehlercode gemeldet. */
+async function ordneEin(env: Bindings, einst: Einstellungen, betreff: string, text: string, anfrageId: string | null, korrelation: string, abh: KiAbhaengigkeiten): Promise<Einordnung | null> {
+  const ki = await kiFuer(env, einst, { korrelationsId: korrelation, ...(anfrageId ? { anfrageId } : {}) }, abh);
+  if (!ki.kann("anfrage_einordnen")) return null;
+  return ki.anfrageEinordnen([betreff, text].filter(Boolean).join("\n\n"));
+}
+
+/** Parkt die Mail ohne jede Antwort: ein Mensch entscheidet. Kein Preis, keine Zusage, kein Versand. */
+async function parkeFuerMensch(env: Bindings, einst: Einstellungen, e: Omit<UnklarEingabe, "bezug">, grund: string): Promise<void> {
+  const id = crypto.randomUUID();
+  const nutzlast = { name: e.name, betreff: e.betreff, text: e.text, messageId: e.mail.messageId ?? null };
+  await env.DB.prepare("INSERT INTO eingang_geparkt (id, kontakt, kanal, nutzlast, grund, korrelation) VALUES (?1, ?2, 'email', ?3, ?4, ?5)")
+    .bind(id, e.kontakt, JSON.stringify(nutzlast), grund, e.korrelation)
+    .run();
+  await speichereAnhaenge(env, einst, e.anhaenge, { geparktId: id }, e.korrelation);
+  await merke(env.DB, e.mail.messageId, { geparktId: id });
 }
 
 interface UnklarEingabe {
