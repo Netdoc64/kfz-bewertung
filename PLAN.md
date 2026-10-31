@@ -199,9 +199,9 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 
 - [ ] Geräte-Kopplung: Admin erzeugt einen Kopplungscode, das Gerät tauscht ihn gegen ein Geräte-Token; Token nur gehasht in D1, widerrufbar, Laufzeit aus der Registry
 - [ ] App-API unter `/api/app/*` mit Geräte-Token: Liste, Detail, Freigabe-Aktionen, Ankaufspreis erfassen — dieselben Regeln und Fehlercodes wie der Admin-Bereich
-- [ ] Android-App mit Capacitor aus `apps/admin` (App-Modus); API-Adresse aus der Kopplung, nicht im Code
+- [x] Android-App mit Capacitor aus `apps/admin` (App-Modus); API-Adresse aus der Kopplung, nicht im Code
 - [ ] Push bei neuer Freigabe über einen Push-Port (Attrappe in Tests, Schlüsselnamen in `.dev.vars.example`)
-- [ ] `npm run apk -w @kfz/admin` baut eine Debug-APK; der Befehl steht im README
+- [x] `npm run apk -w @kfz/admin` baut eine Debug-APK; der Befehl steht im README
 - [ ] Ende-zu-Ende-Test: Gerät koppeln → Freigabe über die App-API → Status `freigegeben`; widerrufenes Token wird abgewiesen
 
 ## Braucht einen Menschen
