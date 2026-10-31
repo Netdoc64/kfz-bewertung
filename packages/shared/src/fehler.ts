@@ -53,6 +53,15 @@ export const FEHLER = {
   // KI (optionaler Anschluss)
   KI_NICHT_AKTIV: { status: 503, schwere: "info", wiederholbar: false, text: "Der KI-Anschluss ist nicht aktiv." },
   KI_FEHLER: { status: 502, schwere: "warnung", wiederholbar: true, text: "Der KI-Anschluss hat nicht geantwortet." },
+  KI_ABGELEHNT: { status: 422, schwere: "warnung", wiederholbar: false, text: "Der KI-Anschluss hat diese Anfrage abgelehnt; sie wird von einem Menschen geprüft." },
+  KI_ZEITUEBERSCHREITUNG: { status: 504, schwere: "warnung", wiederholbar: true, text: "Der KI-Anschluss hat zu lange gebraucht." },
+  KI_ANTWORT_UNGUELTIG: { status: 502, schwere: "warnung", wiederholbar: false, text: "Die Antwort des KI-Anschlusses hatte ein unerwartetes Format." },
+  KI_BUDGET_ERSCHOEPFT: { status: 429, schwere: "info", wiederholbar: false, text: "Das KI-Tagesbudget ist aufgebraucht; es wird ohne KI weitergearbeitet." },
+
+  // App und Push
+  KOPPLUNGSCODE_UNGUELTIG: { status: 401, schwere: "warnung", wiederholbar: false, text: "Der Kopplungscode ist ungültig oder abgelaufen." },
+  GERAET_WIDERRUFEN: { status: 401, schwere: "warnung", wiederholbar: false, text: "Dieses Gerät ist nicht mehr gekoppelt. Bitte neu koppeln." },
+  PUSH_FEHLGESCHLAGEN: { status: 502, schwere: "warnung", wiederholbar: true, text: "Die Push-Nachricht konnte nicht zugestellt werden." },
 
   // Autonomie und Betrieb
   AUTOPILOT_GESPERRT: { status: 423, schwere: "info", wiederholbar: false, text: "Der automatische Betrieb ist gerade angehalten." },

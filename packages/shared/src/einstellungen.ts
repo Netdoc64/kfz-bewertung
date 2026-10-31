@@ -24,7 +24,9 @@ export type EinstellungsGruppe =
   | "benachrichtigung"
   | "bericht"
   | "mail"
-  | "oberflaeche";
+  | "oberflaeche"
+  | "app"
+  | "push";
 
 /** Plausibler Bereich eines Zahlenwerts. Außerhalb: Warnung, kein Schemafehler. */
 export interface Plausibilitaet {
@@ -468,6 +470,23 @@ export const EINSTELLUNGEN = {
     "Welche Fähigkeiten des KI-Anschlusses genutzt werden.",
   ),
   "ki.tagesbudgetEuro": def("ki", z.number().nonnegative(), 5, "Tagesobergrenze für KI-Kosten; darüber wird ohne KI weitergearbeitet."),
+  "ki.modell": def("ki", z.string().min(1), "claude-sonnet-5-5", "Modell-ID, die der KI-Anschluss anfragt."),
+  "ki.aufwand": def("ki", z.enum(["niedrig", "mittel", "hoch"]), "niedrig", "Denkaufwand je KI-Anfrage; höher kostet mehr und dauert länger."),
+  "ki.maxAusgabeToken": def("ki", z.number().int().positive(), 1024, "Obergrenze der Ausgabe-Token je KI-Anfrage.", { min: 64, max: 8192 }),
+  "ki.zeitlimitMs": def("ki", z.number().int().positive(), 20000, "Zeitlimit je KI-Anfrage; danach wird ohne KI weitergearbeitet.", { min: 1000, max: 60000 }),
+  "ki.mindestSicherheit": def(
+    "ki",
+    z.number().min(0).max(1),
+    0.8,
+    "Mindestsicherheit (0 bis 1) je ausgelesenem Feld; darunter bleibt das Feld offen und geht an einen Menschen.",
+    { min: 0.5, max: 1 },
+  ),
+  "ki.preiseJeMillionToken": def(
+    "ki",
+    z.object({ eingabeEuro: z.number().nonnegative(), ausgabeEuro: z.number().nonnegative() }),
+    { eingabeEuro: 3, ausgabeEuro: 15 },
+    "Preis in Euro je Million Token, Grundlage der Kostenrechnung gegen das Tagesbudget. Bei Preisänderung des Anbieters anpassen.",
+  ),
 
   // Betrieb
   "betrieb.fehlerSpeichernAbSchwere": def("betrieb", z.enum(["info", "warnung", "fehler", "kritisch"]), "warnung", "Ab dieser Schwere landet ein Fehler im Fehlerspeicher."),
@@ -526,6 +545,23 @@ export const EINSTELLUNGEN = {
       },
     },
     "Mailtexte an den Admin je Stufe (neu, erinnerung, eskalation). Platzhalter: {{anfrage}}, {{fahrzeug}}, {{stunden}}.",
+  ),
+
+  // Smartphone-App
+  "app.tokenLaufzeitTage": def("app", z.number().int().positive(), 90, "Gültigkeit eines Geräte-Tokens; danach muss das Gerät neu gekoppelt werden.", { min: 1, max: 365 }),
+  "app.kopplungscodeGueltigMinuten": def("app", z.number().int().positive(), 10, "Gültigkeit eines Kopplungscodes für ein neues Gerät.", { min: 1, max: 60 }),
+
+  // Push
+  "push.aktiv": def("push", z.boolean(), false, "Schaltet Push-Nachrichten an gekoppelte Geräte ein."),
+  "push.texte": def(
+    "push",
+    z.record(z.string(), z.object({ titel: z.string().min(1), text: z.string().min(1) })),
+    {
+      neu: { titel: "Neue Freigabe", text: "Anfrage {{anfrage}} ({{fahrzeug}}) wartet auf Freigabe." },
+      erinnerung: { titel: "Erinnerung: Freigabe offen", text: "Anfrage {{anfrage}} ({{fahrzeug}}) wartet seit {{stunden}} Stunden." },
+      eskalation: { titel: "Eskalation: Freigabe offen", text: "Anfrage {{anfrage}} ({{fahrzeug}}) braucht seit {{stunden}} Stunden eine Entscheidung." },
+    },
+    "Push-Texte je Stufe (neu, erinnerung, eskalation). Platzhalter: {{anfrage}}, {{fahrzeug}}, {{stunden}}.",
   ),
 
   // Bericht

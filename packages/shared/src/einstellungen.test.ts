@@ -106,6 +106,13 @@ describe("Fehlercodes für Phase 1–3", () => {
     "CRON_FEHLGESCHLAGEN",
     "ALARM_FEHLGESCHLAGEN",
     "DEAD_LETTER",
+    "KI_ABGELEHNT",
+    "KI_ZEITUEBERSCHREITUNG",
+    "KI_ANTWORT_UNGUELTIG",
+    "KI_BUDGET_ERSCHOEPFT",
+    "KOPPLUNGSCODE_UNGUELTIG",
+    "GERAET_WIDERRUFEN",
+    "PUSH_FEHLGESCHLAGEN",
   ];
 
   it.each(CODES)("%s steht vollständig im Katalog", (c) => {
@@ -114,5 +121,36 @@ describe("Fehlercodes für Phase 1–3", () => {
     expect(f.text.length).toBeGreaterThan(10);
     expect(typeof f.wiederholbar).toBe("boolean");
     expect(f.status).toBeGreaterThanOrEqual(400);
+  });
+});
+
+describe("Schlüssel für Phase 6 und 7", () => {
+  const GRUPPEN: Record<string, string> = {
+    "ki.modell": "ki",
+    "ki.aufwand": "ki",
+    "ki.maxAusgabeToken": "ki",
+    "ki.zeitlimitMs": "ki",
+    "ki.mindestSicherheit": "ki",
+    "ki.preiseJeMillionToken": "ki",
+    "app.tokenLaufzeitTage": "app",
+    "app.kopplungscodeGueltigMinuten": "app",
+    "push.aktiv": "push",
+    "push.texte": "push",
+  };
+
+  it.each(Object.entries(GRUPPEN))("%s ist in Gruppe %s angelegt, Standard gültig", (k, g) => {
+    const d = EINSTELLUNGEN[k as keyof typeof EINSTELLUNGEN];
+    expect(d.gruppe).toBe(g);
+    expect(d.beschreibung.length).toBeGreaterThan(10);
+    expect(d.schema.safeParse(d.standard).success).toBe(true);
+  });
+
+  it("ki.mindestSicherheit lehnt Werte über 1 ab, ki.aufwand unbekannte Stufen", () => {
+    expect(EINSTELLUNGEN["ki.mindestSicherheit"].schema.safeParse(1.5).success).toBe(false);
+    expect(EINSTELLUNGEN["ki.aufwand"].schema.safeParse("maximal").success).toBe(false);
+  });
+
+  it("push.aktiv ist standardmäßig aus", () => {
+    expect(EINSTELLUNGEN["push.aktiv"].standard).toBe(false);
   });
 });
