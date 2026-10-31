@@ -12,6 +12,8 @@ import { formularRouten } from "./routen/formular.js";
 import { kennzahlenRouten } from "./routen/kennzahlen.js";
 import { einstellungenRouten } from "./routen/einstellungen.js";
 import { fehlerRouten } from "./routen/fehler.js";
+import { geraeteRouten } from "./routen/geraete.js";
+import { appRouten } from "./routen/app.js";
 
 export const app = new Hono<AppUmgebung>()
   .use("*", grundlage)
@@ -27,7 +29,9 @@ export const app = new Hono<AppUmgebung>()
   .route("/api/admin/anfragen", anfragenRouten)
   .route("/api/admin/geparkt", geparktRouten)
   .route("/api/admin/dead-letter", deadLetterRouten)
-  .route("/api/admin/kennzahlen", kennzahlenRouten);
+  .route("/api/admin/kennzahlen", kennzahlenRouten)
+  .route("/api/admin/geraete", geraeteRouten)
+  .route("/api/app", appRouten);
 
 app.onError(fehlerBehandlung);
 app.notFound(nichtGefunden);
