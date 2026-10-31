@@ -2,6 +2,7 @@ import { ApiFehler, erzeugeApi } from "./api.js";
 import { rendere, rendereKopplung } from "./ansicht.js";
 import { erzeugeAppApi, istAppModus, koppeln, ladeBeschriftungen, ladeKopplung, loescheKopplung, merkeBeschriftungen, type Kopplung } from "./app-modus.js";
 import { Steuerung } from "./steuerung.js";
+import { istAktivierung } from "./tastatur.js";
 
 const gefunden = document.getElementById("app");
 if (!gefunden) throw new Error("#app fehlt");
@@ -89,6 +90,13 @@ wurzel.addEventListener("click", (e) => {
   else if (seite) void steuerung.geheZuSeite(Number(seite.dataset.seite));
   else if (ziel.closest("[data-zurueck]")) void steuerung.ladeListe();
   else if (zeile) void steuerung.oeffne(zeile.dataset.id ?? "");
+});
+wurzel.addEventListener("keydown", (e) => {
+  const zeile = (e.target as HTMLElement).closest<HTMLElement>("tr[data-id]");
+  // Knöpfe und Felder lösen selbst aus; nur die fokussierte Zeile selbst braucht die Taste.
+  if (!zeile || e.target !== zeile || !istAktivierung(e)) return;
+  e.preventDefault();
+  void steuerung.oeffne(zeile.dataset.id ?? "");
 });
 wurzel.addEventListener("input", (e) => {
   const ziel = e.target as HTMLElement;
