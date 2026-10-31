@@ -206,14 +206,14 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 
 ### Phase 8 — Härtung
 
-- [ ] Sicherheits-Review aller Routen nach OWASP API Top 10; Befunde in `docs/SICHERHEIT.md` mit Stand je Befund, jeder behobene mit Test
-- [ ] Rate-Limits für Formular, E-Mail-Eingang und App-API, Grenzwerte aus der Registry; Test für die Überschreitung
-- [ ] `npm run coverage` mit Mindestwerten (Zeilen ≥ 85 %, Zweige ≥ 75 %), CI bricht darunter ab
-- [ ] OpenAPI-Spezifikation aus den zod-Schemas erzeugt (`npm run openapi`); CI prüft, dass sie aktuell ist
-- [ ] Admin-Web und App-Modus barrierefrei: axe-Test ohne schwere Befunde, Tastaturbedienung, Kontrast
-- [ ] Betriebshandbuch `docs/BETRIEB.md`: Deploy, Migrationen, Not-Aus, Alarme, Wiederanlauf aus Dead-Letter, DSGVO-Auskunft und -Löschung
-- [ ] Lasttest des Bewertungs-Jobs mit 500 Mock-Anfragen: keine Doppelverarbeitung, Laufzeit im festgelegten Rahmen
-- [ ] `npm audit --omit=dev --audit-level=high` ohne Befund
+- [x] Sicherheits-Review aller Routen nach OWASP API Top 10; Befunde in `docs/SICHERHEIT.md` mit Stand je Befund, jeder behobene mit Test
+- [x] Rate-Limits für Formular, E-Mail-Eingang und App-API, Grenzwerte aus der Registry; Test für die Überschreitung
+- [x] `npm run coverage` mit Mindestwerten (Zeilen ≥ 85 %, Zweige ≥ 75 %), CI bricht darunter ab
+- [x] OpenAPI-Spezifikation aus den zod-Schemas erzeugt (`npm run openapi`); CI prüft, dass sie aktuell ist
+- [x] Admin-Web und App-Modus barrierefrei: axe-Test ohne schwere Befunde, Tastaturbedienung, Kontrast
+- [x] Betriebshandbuch `docs/BETRIEB.md`: Deploy, Migrationen, Not-Aus, Alarme, Wiederanlauf aus Dead-Letter, DSGVO-Auskunft und -Löschung
+- [x] Lasttest des Bewertungs-Jobs mit 500 Mock-Anfragen: keine Doppelverarbeitung, Laufzeit im festgelegten Rahmen
+- [x] `npm audit --omit=dev --audit-level=high` ohne Befund
 
 ## Braucht einen Menschen
 
