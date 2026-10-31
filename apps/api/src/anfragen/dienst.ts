@@ -4,6 +4,7 @@ import type { Einstellungen } from "../einstellungen/dienst.js";
 import { meldeFreigabe } from "../benachrichtigung/index.js";
 import { AppFehler, alsAppFehler } from "../fehler/app-fehler.js";
 import { fehlerSpeichern } from "../fehler/speicher.js";
+import type { PushAnschluss } from "../push/port.js";
 import { sende } from "../versand/index.js";
 import type { Kanal } from "../versand/kanal.js";
 import type { ManagerZugang } from "../versand/manager.js";
@@ -41,6 +42,8 @@ export interface AnfrageUmgebung {
   queue: Queue<unknown>;
   /** Für Alarm bei Flut und Fehlern; ohne Binding kein Alarm (Tests). */
   email?: SendEmail;
+  /** Push an gekoppelte Geräte bei neuer Freigabe; ohne Angabe kein Push. */
+  push?: PushAnschluss;
   /** Zugang zum Business Manager für WhatsApp-Kontakte; fehlt er, gibt es dafür keinen Kanal. */
   manager?: Partial<ManagerZugang>;
   /** Kanal für Rückfragen; Standard: E-Mail, wenn der Kontakt eine Adresse ist. */
@@ -119,7 +122,7 @@ export async function wechsle(u: AnfrageUmgebung, z: Zeile, aktion: string, durc
   z.version += 1;
   if (nach === "zur_freigabe" && u.email) {
     // A3: der Admin erfährt sofort von der offenen Freigabe; scheitert das, holt der Cron es nach.
-    await meldeFreigabe(u.db, u.einstellungen, u.email, z, "neu", 0).catch((e) => meldeFehler(u, e, "anfragen:freigabe-benachrichtigung", k.korrelation));
+    await meldeFreigabe(u.db, u.einstellungen, u.email, z, "neu", 0, u.push).catch((e) => meldeFehler(u, e, "anfragen:freigabe-benachrichtigung", k.korrelation));
   }
 }
 

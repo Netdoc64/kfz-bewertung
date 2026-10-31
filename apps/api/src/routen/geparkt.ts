@@ -48,6 +48,9 @@ async function anhaenge(db: D1Database, geparktId: string): Promise<AnhangZeile[
 /** Freigabe eines Mail-Eingangs: Fahrzeugangaben (und ggf. Name/Kennzeichen) kommen vom Admin, der Rest aus der Mail. */
 const MailFreigabeSchema = AnlegenSchema.pick({ name: true, fahrzeug: true, kennzeichen: true }).partial({ name: true });
 
+/** Gründe, bei denen die Nutzlast eine Mail ohne Fahrzeugangaben ist; der Admin ergänzt sie beim Freigeben. */
+const MAIL_GRUENDE = new Set(["mail_unklar", "ki_sonstiges", "ki_rueckfrage_unzuordenbar"]);
+
 function ansicht(z: Zeile) {
   let nutzlast: unknown = null;
   try {
@@ -100,7 +103,7 @@ export const geparktRouten = new Hono<AppUmgebung>()
     offenPflicht(z);
     const nutzlast = ansicht(z).nutzlast;
     let kandidat = nutzlast;
-    if (z.grund === "mail_unklar") {
+    if (MAIL_GRUENDE.has(z.grund)) {
       // Die Mail trägt keine Fahrzeugangaben; der Admin ergänzt sie beim Freigeben.
       const roh = await c.req.json().catch(() => ({}));
       const m = MailFreigabeSchema.safeParse(roh);

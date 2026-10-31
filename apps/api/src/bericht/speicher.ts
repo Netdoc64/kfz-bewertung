@@ -1,8 +1,9 @@
-import type { Fahrzeug } from "@kfz/shared";
+import type { BerichtEingabe, Fahrzeug, KiAnschluss } from "@kfz/shared";
 import { AppFehler } from "../fehler/app-fehler.js";
 import type { Bewertung } from "../bewertung/bewerten.js";
 import type { Einstellungen } from "../einstellungen/dienst.js";
-import { rendereBericht } from "./rendern.js";
+import { fehlerSpeichern } from "../fehler/speicher.js";
+import { rendereBericht, waehleVorlage } from "./rendern.js";
 
 export interface GespeicherterBericht {
   id: string;
@@ -29,6 +30,29 @@ export interface BerichtSpeichern {
   bewertung: Bewertung;
   sprache: string;
   jetzt: Date;
+  /** Optional: formuliert einen Zusatzabsatz. Zahlen, Preis und Abdruck kommen nie von hier. */
+  ki?: KiAnschluss;
+}
+
+/** Nur Zahlen aus dem Bewertungskern; die Antwort der KI wird nie gelesen, um etwas zu übernehmen. */
+function kiEingabe(e: BerichtSpeichern, sprache: string): BerichtEingabe {
+  const b = e.bewertung;
+  const zahlen: Record<string, number> = { konfidenz: b.konfidenz, anzahlVergleiche: b.anzahlVergleiche };
+  const roh = { marktpreisEuro: b.marktpreisEuro, verkaufspreisEuro: b.verkaufspreisEuro, ankaufspreisEuro: b.ankaufspreisEuro, ankaufVonEuro: b.spanne?.vonEuro, ankaufBisEuro: b.spanne?.bisEuro };
+  for (const [k, v] of Object.entries(roh)) if (typeof v === "number") zahlen[k] = v;
+  const begruendungen = (b.regeln?.angewendet ?? []).map((r) => r.begruendung);
+  return { sprache, fahrzeug: e.fahrzeug, zahlen, begruendungen };
+}
+
+/** Der Bericht ist auch ohne KI vollständig: jeder Fehlschlag ergibt `null` plus Eintrag im Fehlerspeicher. */
+async function kiText(db: D1Database, e: BerichtSpeichern, sprache: string): Promise<string | null> {
+  if (!e.ki?.kann("bericht_formulieren")) return null;
+  try {
+    return (await e.ki.berichtFormulieren(kiEingabe(e, sprache)))?.trim() || null;
+  } catch (ursache) {
+    await fehlerSpeichern(db, { fehler: new AppFehler("KI_FEHLER", undefined, { kontext: { faehigkeit: "bericht_formulieren" } }), ort: "bericht.ki", korrelationsId: e.anfrageId }, "info").catch(() => {});
+    return null;
+  }
 }
 
 interface Zeile {
@@ -99,12 +123,14 @@ export async function berichtSpeichern(
     einstellungen.abdruck(),
   ]);
   const gueltigBis = new Date(eingabe.jetzt.getTime() + tage * TAG_MS);
+  const text = await kiText(db, eingabe, waehleVorlage(vorlagen, eingabe.sprache).sprache);
   const gerendert = rendereBericht({
     fahrzeug: eingabe.fahrzeug,
     bewertung: eingabe.bewertung,
     vorlagen,
     sprache: eingabe.sprache,
     gueltigBis,
+    kiText: text,
   });
   const { vergleiche, ...zahlen } = eingabe.bewertung;
   const schluessel = r2Schluessel(eingabe.anfrageId, eingabe.generation);

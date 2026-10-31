@@ -1,4 +1,4 @@
-import type { Aktion, Anfrage, Dauer, Detail } from "./api.js";
+import type { Aktion, Anfrage, Dauer, Detail, GeparkterEintrag, Kennzahlen } from "./api.js";
 import type { Bearbeitung, Zustand } from "./steuerung.js";
 
 const ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -15,6 +15,15 @@ const datum = (iso: string) => {
 type T = (schluessel: string) => string;
 const beschrifter = (z: Zustand): T => (k) => z.beschriftungen[k] ?? k;
 
+function kiBlock(k: Kennzahlen["ki"], t: T): string {
+  const zeilen = Object.entries(k.faehigkeiten)
+    .map(([f, n]) => `<tr><td>${esc(f)}</td><td>${esc(zahl(n.aufrufe))}</td><td>${esc(zahl(n.tokenEin))}</td><td>${esc(zahl(n.tokenAus))}</td><td>${esc(kiEuro(n.kostenEuro))}</td></tr>`)
+    .join("");
+  const kopf = `<th>${esc(t("kennzahlKiFaehigkeit"))}</th><th>${esc(t("kennzahlKiAufrufe"))}</th><th>${esc(t("kennzahlKiTokenEin"))}</th><th>${esc(t("kennzahlKiTokenAus"))}</th><th>${esc(t("kennzahlKiKosten"))}</th>`;
+  const summe = `<p>${esc(t("kennzahlKiAufrufe"))}: ${esc(zahl(k.aufrufe))}, ${esc(t("kennzahlKiTokenEin"))}: ${esc(zahl(k.tokenEin))}, ${esc(t("kennzahlKiTokenAus"))}: ${esc(zahl(k.tokenAus))}, ${esc(t("kennzahlKiKosten"))}: ${esc(kiEuro(k.kostenEuro))}, ${esc(t("kennzahlKiKostenJeAnfrage"))}: ${esc(kiEuro(k.kostenJeAnfrage))}</p>`;
+  return `<section><h2>${esc(t("kennzahlKi"))}</h2>${k.aufrufe ? `${summe}<table><thead><tr>${kopf}</tr></thead><tbody>${zeilen}</tbody></table>` : `<p>${esc(t("kennzahlKiLeer"))}</p>`}</section>`;
+}
+
 function meldung(z: Zustand, t: T): string {
   const m = z.meldung;
   if (!m) return "";
@@ -27,10 +36,12 @@ function navigation(z: Zustand, t: T): string {
   const knopf = (ziel: string, text: string, aktiv: boolean) =>
     `<button data-nav="${ziel}"${aktiv ? ' disabled aria-current="page"' : ""}>${esc(text)}</button>`;
   const anfragen = z.ansicht === "liste";
-  return `<nav class="haupt">${knopf("anfragen", t("navAnfragen"), anfragen)} ${knopf("einstellungen", t("navEinstellungen"), z.ansicht === "einstellungen")} ${knopf("fehler", t("navFehler"), z.ansicht === "fehler")} ${knopf("deadletter", t("navDeadLetter"), z.ansicht === "deadletter")} ${knopf("kennzahlen", t("navKennzahlen"), z.ansicht === "kennzahlen")}</nav>`;
+  if (z.appModus) return `<nav class="haupt">${knopf("anfragen", t("navAnfragen"), anfragen)}</nav>`;
+  return `<nav class="haupt">${knopf("anfragen", t("navAnfragen"), anfragen)} ${knopf("einstellungen", t("navEinstellungen"), z.ansicht === "einstellungen")} ${knopf("fehler", t("navFehler"), z.ansicht === "fehler")} ${knopf("deadletter", t("navDeadLetter"), z.ansicht === "deadletter")} ${knopf("kennzahlen", t("navKennzahlen"), z.ansicht === "kennzahlen")} ${knopf("geparkt", t("navGeparkt"), z.ansicht === "geparkt")}</nav>`;
 }
 
 function filterLeiste(z: Zustand, t: T): string {
+  if (!Object.keys(z.statusNamen).length) return "";
   const optionen = Object.entries(z.statusNamen)
     .map(([k, name]) => `<option value="${esc(k)}"${z.filter === k ? " selected" : ""}>${esc(name)}</option>`)
     .join("");
@@ -197,8 +208,39 @@ export function rendereDeadLetter(z: Zustand): string {
   return `${navigation(z, t)}<h1>${esc(t("deadLetterTitel"))}</h1>${meldung(z, t)}${inhalt}`;
 }
 
+function geparktZeile(g: GeparkterEintrag, z: Zustand, t: T): string {
+  const n = g.nutzlast ?? {};
+  const sperre = z.laedt ? " disabled" : "";
+  const id = esc(g.id);
+  // Mails tragen keine Fahrzeugangaben: das Formular verlangt sie. Beim Flutschutz reicht der Knopf.
+  const mail = g.kanal === "email";
+  const felder = mail
+    ? `<p>${esc(t("geparktFreigabeHinweis"))}</p>` +
+      `<label>${esc(t("geparktName"))} <input data-geparkt-feld="name" value="${esc(n.name ?? "")}"></label> ` +
+      `<label>${esc(t("geparktFahrzeugMarke"))} <input data-geparkt-feld="marke" required></label> ` +
+      `<label>${esc(t("geparktFahrzeugModell"))} <input data-geparkt-feld="modell" required></label> ` +
+      `<label>${esc(t("geparktKennzeichen"))} <input data-geparkt-feld="kennzeichen"></label> `
+    : "";
+  const inhalt = mail ? `<pre>${esc([n.betreff, n.text].filter(Boolean).join("\n\n"))}</pre>` : "";
+  const geprueft = g.geprueft_am ? `<p>${esc(t("geparktGeprueft"))}: ${esc(datum(g.geprueft_am))}${g.geprueft_von ? ` (${esc(g.geprueft_von)})` : ""}</p>` : "";
+  return (
+    `<li data-geparkt="${id}"><strong class="grund grund-${esc(g.grund)}">${esc(t(`geparktGrund.${g.grund}`))}</strong> · ${esc(g.kontakt)} · ${esc(datum(g.erstellt_am))}${inhalt}${geprueft}` +
+    `<form data-geparkt-form="${id}">${felder}<button type="submit"${sperre}>${esc(t("geparktFreigeben"))}</button> ` +
+    `<button type="button" data-geparkt-verwerfen="${id}"${sperre}>${esc(t("geparktVerwerfen"))}</button>` +
+    `${g.geprueft_am ? "" : ` <button type="button" data-geparkt-pruefen="${id}"${sperre}>${esc(t("geparktPruefen"))}</button>`}</form></li>`
+  );
+}
+
+export function rendereGeparkt(z: Zustand): string {
+  const t = beschrifter(z);
+  let inhalt = z.laedt && !z.geparkt ? `<p>${esc(t("laedt"))}</p>` : "";
+  if (z.geparkt) inhalt = z.geparkt.length ? `<ul class="geparkt">${z.geparkt.map((g) => geparktZeile(g, z, t)).join("")}</ul>` : `<p>${esc(t("geparktLeer"))}</p>`;
+  return `${navigation(z, t)}<h1>${esc(t("geparktTitel"))}</h1>${meldung(z, t)}${inhalt}`;
+}
+
 const prozent = (w: number | null) => (w === null ? "–" : new Intl.NumberFormat("de-DE", { style: "percent", maximumFractionDigits: 1 }).format(w));
 const zahl = (w: number | null) => (w === null ? "–" : new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(w));
+const kiEuro = (w: number | null) => (w === null ? "–" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(w));
 const stunden = (sek: number | null, t: T) => (sek === null ? "–" : `${zahl(sek / 3600)} ${t("einheitStunden")}`);
 const dauerZellen = (d: Dauer | undefined, t: T) =>
   `<td>${esc(d?.anzahl ?? 0)}</td><td>${esc(stunden(d?.mittel ?? null, t))}</td><td>${esc(stunden(d?.median ?? null, t))}</td><td>${esc(stunden(d?.max ?? null, t))}</td>`;
@@ -244,10 +286,23 @@ export function rendereKennzahlen(z: Zustand): string {
       `<section><h2>${esc(t("kennzahlKonfidenz"))}</h2><p>${esc(t("kennzahlMittel"))}: ${esc(zahl(k.konfidenz.mittel))} (${esc(k.konfidenz.berichte)})</p><table><tbody>${klassen}</tbody></table></section>` +
       `<section><h2>${esc(t("kennzahlFehlerrate"))}</h2><p>${esc(k.fehlerrate.fehlgeschlagen)} / ${esc(k.fehlerrate.bewertungen)} (${esc(prozent(k.fehlerrate.rate))})</p></section>` +
       `<section><h2>${esc(t("kennzahlFreigabedauer"))}</h2><table><thead><tr>${kopfDauer}</tr></thead><tbody><tr>${dauerZellen(k.freigabedauer, t)}</tr></tbody></table></section>` +
+      kiBlock(k.ki, t) +
       abweichungsBlock(z, t);
   }
   return `${navigation(z, t)}<h1>${esc(t("kennzahlenTitel"))}</h1>${meldung(z, t)}${wahl}${inhalt}`;
 }
 
+/** Kopplungsansicht des App-Modus: API-Adresse, Kopplungscode und Gerätename. */
+export function rendereKopplung(t: T, fehler: { code: string; text: string } | null, laedt: boolean, adresse = ""): string {
+  const meldung = fehler ? `<div class="meldung fehler" role="alert"><strong>${esc(t("fehler"))} ${esc(fehler.code)}:</strong> ${esc(fehler.text)}</div>` : "";
+  return (
+    `<h1>${esc(t("kopplungTitel"))}</h1>${meldung}` +
+    `<form data-koppeln><p><label>${esc(t("kopplungAdresse"))} <input name="adresse" inputmode="url" autocomplete="off" value="${esc(adresse)}"></label></p>` +
+    `<p><label>${esc(t("kopplungCode"))} <input name="code" autocomplete="off"></label></p>` +
+    `<p><label>${esc(t("kopplungName"))} <input name="name" maxlength="80" autocomplete="off"></label></p>` +
+    `<button type="submit"${laedt ? " disabled" : ""}>${esc(laedt ? t("laedt") : t("kopplungKnopf"))}</button></form>`
+  );
+}
+
 export const rendere = (z: Zustand): string =>
-  z.ansicht === "liste" ? rendereListe(z) : z.ansicht === "detail" ? rendereDetail(z) : z.ansicht === "einstellungen" ? rendereEinstellungen(z) : z.ansicht === "deadletter" ? rendereDeadLetter(z) : z.ansicht === "kennzahlen" ? rendereKennzahlen(z) : rendereFehler(z);
+  z.ansicht === "liste" ? rendereListe(z) : z.ansicht === "detail" ? rendereDetail(z) : z.ansicht === "einstellungen" ? rendereEinstellungen(z) : z.ansicht === "deadletter" ? rendereDeadLetter(z) : z.ansicht === "kennzahlen" ? rendereKennzahlen(z) : z.ansicht === "geparkt" ? rendereGeparkt(z) : rendereFehler(z);

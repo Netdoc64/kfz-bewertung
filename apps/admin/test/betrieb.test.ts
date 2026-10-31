@@ -35,6 +35,15 @@ const kennzahlen = {
   konfidenz: { berichte: 4, mittel: 0.8, klassen: [{ von: null, bis: 0.5, anzahl: 1 }, { von: 0.5, bis: null, anzahl: 3 }] },
   fehlerrate: { bewertungen: 5, fehlgeschlagen: 1, rate: 0.2 },
   freigabedauer: dauer,
+  ki: {
+    aufrufe: 3,
+    anfragen: 2,
+    tokenEin: 1500,
+    tokenAus: 300,
+    kostenEuro: 0.0123,
+    kostenJeAnfrage: 0.00615,
+    faehigkeiten: { "auslesen<x>": { aufrufe: 2, tokenEin: 1000, tokenAus: 200, kostenEuro: 0.008 }, formulieren: { aufrufe: 1, tokenEin: 500, tokenAus: 100, kostenEuro: 0.0043 } },
+  },
 };
 const abweichungen = {
   gesamt: 3,
@@ -46,7 +55,7 @@ function server(opt: { erneut?: () => Response } = {}) {
   const aufrufe: Aufruf[] = [];
   const abruf: Abruf = async (url, init) => {
     aufrufe.push({ url, init });
-    if (url.includes("/oberflaeche.beschriftungen")) return antwort({ wert: { bereitsEingereiht: "Schon eingereiht.", navKennzahlen: "Kennzahlen", einheitStunden: "Std.", erneutEinreihen: "Erneut einreihen" } });
+    if (url.includes("/oberflaeche.beschriftungen")) return antwort({ wert: { bereitsEingereiht: "Schon eingereiht.", navKennzahlen: "Kennzahlen", kennzahlKi: "KI-Nutzung", kennzahlKiTokenEin: "Token ein", kennzahlKiTokenAus: "Token aus", kennzahlKiKosten: "Kosten", kennzahlKiKostenJeAnfrage: "Kosten je Anfrage", kennzahlKiAufrufe: "Aufrufe", kennzahlKiFaehigkeit: "Fähigkeit", kennzahlKiLeer: "Keine KI-Nutzung.", einheitStunden: "Std.", erneutEinreihen: "Erneut einreihen" } });
     if (url.includes("/ablauf.statusBeschriftungen")) return antwort({ wert: { zur_freigabe: "Wartet auf Freigabe" } });
     if (url.endsWith("/dead-letter")) return antwort({ eintraege: [eintrag(7)] });
     if (url.endsWith("/dead-letter/7/erneut")) return opt.erneut ? opt.erneut() : antwort({ ...eintrag(7, { erneut_am: "x" }), bereitsEingereiht: false });
@@ -121,6 +130,20 @@ describe("Kennzahlen-Seite", () => {
     expect(html).toContain("&lt;b&gt;konfidenz&lt;/b&gt;");
     expect(html).toContain("5000–15000");
     expect(html).toContain("-250");
+  });
+
+  it("zeigt KI-Token und -Kosten, auch je Fähigkeit und je Anfrage (maskiert)", async () => {
+    const s = server();
+    const st = new Steuerung(erzeugeApi(s.abruf));
+    await st.start();
+    await st.zeigeKennzahlen();
+    const html = rendere(st.zustand);
+    expect(html).toContain("KI-Nutzung");
+    expect(html).toContain("1.500");
+    expect(html).toContain("Kosten: 0,0123 €");
+    expect(html).toContain("Kosten je Anfrage: 0,0062 €");
+    expect(html).toContain("auslesen&lt;x&gt;");
+    expect(html).not.toContain("auslesen<x>");
   });
 
   it("sendet den gewählten Zeitraum als ISO-Grenzen", async () => {

@@ -17,6 +17,10 @@ describe("Verdrahtung", () => {
     }
   });
 
+  it("App-Bereich verlangt ein Geräte-Token", async () => {
+    expect((await anfrage("/api/app/x")).status).toBe(401);
+  });
+
   it("Admin-Bereich verlangt in Produktion ein Access-Token", async () => {
     const r = await app.request("http://lokal/api/admin/anfragen/x", undefined, {
       ...env,

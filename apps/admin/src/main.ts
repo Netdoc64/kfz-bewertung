@@ -1,14 +1,27 @@
-import { erzeugeApi } from "./api.js";
-import { rendere } from "./ansicht.js";
+import { ApiFehler, erzeugeApi } from "./api.js";
+import { rendere, rendereKopplung } from "./ansicht.js";
+import { erzeugeAppApi, istAppModus, koppeln, ladeBeschriftungen, ladeKopplung, loescheKopplung, merkeBeschriftungen, type Kopplung } from "./app-modus.js";
 import { Steuerung } from "./steuerung.js";
 
-const wurzel = document.getElementById("app");
-if (!wurzel) throw new Error("#app fehlt");
+const gefunden = document.getElementById("app");
+if (!gefunden) throw new Error("#app fehlt");
+const wurzel: HTMLElement = gefunden;
 
 const preisFeld = () => wurzel.querySelector<HTMLInputElement>("[data-preis]");
 const notizFeld = () => wurzel.querySelector<HTMLInputElement>("[data-notiz]");
 
-const steuerung = new Steuerung(erzeugeApi((url, init) => fetch(url, init)), (z) => {
+const abruf = (url: string, init?: RequestInit) => fetch(url, init);
+const appModus = istAppModus(window as { Capacitor?: unknown });
+let kopplung: Kopplung | null = appModus ? ladeKopplung() : null;
+
+function zeigeKopplung(fehler: { code: string; text: string } | null = null, laedt = false): void {
+  const b = ladeBeschriftungen();
+  wurzel.innerHTML = rendereKopplung((k) => b[k] ?? k, fehler, laedt, kopplung?.adresse ?? "");
+}
+
+const steuerung = new Steuerung(
+  appModus && kopplung ? erzeugeAppApi(abruf, kopplung) : erzeugeApi(abruf),
+  (z) => {
   // Eine eingetippte Notiz überlebt das Neuzeichnen nicht von selbst.
   const notiz = notizFeld()?.value ?? "";
   const preis = preisFeld()?.value ?? "";
@@ -17,6 +30,37 @@ const steuerung = new Steuerung(erzeugeApi((url, init) => fetch(url, init)), (z)
   if (feld) feld.value = notiz;
   const pf = preisFeld();
   if (pf) pf.value = preis;
+  },
+  {
+    appModus,
+    beiWiderruf: () => {
+      loescheKopplung();
+      zeigeKopplung();
+    },
+  },
+);
+
+wurzel.addEventListener("submit", (e) => {
+  const form = e.target as HTMLFormElement;
+  if (!form.matches("[data-koppeln]")) return;
+  e.preventDefault();
+  const wert = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
+  zeigeKopplung(null, true);
+  void koppeln(abruf, { adresse: wert("adresse"), code: wert("code"), name: wert("name") || (navigator.platform || "App") }).then(
+    () => location.reload(),
+    (err: unknown) => {
+      const f = err instanceof ApiFehler ? err : new ApiFehler("UNBEKANNT", "", 0);
+      zeigeKopplung({ code: f.code, text: f.text });
+    },
+  );
+});
+
+wurzel.addEventListener("submit", (e) => {
+  const form = e.target as HTMLFormElement;
+  if (!form.matches("[data-geparkt-form]")) return;
+  e.preventDefault();
+  const wert = (n: string) => form.querySelector<HTMLInputElement>(`[data-geparkt-feld="${n}"]`)?.value ?? "";
+  void steuerung.gibGeparktFrei(form.dataset.geparktForm ?? "", wert("marke"), wert("modell"), wert("name"), wert("kennzeichen"));
 });
 
 wurzel.addEventListener("click", (e) => {
@@ -28,9 +72,13 @@ wurzel.addEventListener("click", (e) => {
   const quittiere = ziel.closest<HTMLElement>("[data-quittiere]");
   const erneut = ziel.closest<HTMLElement>("[data-erneut]");
   const seite = ziel.closest<HTMLElement>("[data-seite]");
-  if (nav) {
+  const verwerfen = ziel.closest<HTMLElement>("[data-geparkt-verwerfen]");
+  const pruefen = ziel.closest<HTMLElement>("[data-geparkt-pruefen]");
+  if (verwerfen) void steuerung.verwirfGeparkt(verwerfen.dataset.geparktVerwerfen ?? "");
+  else if (pruefen) void steuerung.pruefeGeparkt(pruefen.dataset.geparktPruefen ?? "");
+  else if (nav) {
     const w = nav.dataset.nav;
-    void (w === "einstellungen" ? steuerung.zeigeEinstellungen() : w === "fehler" ? steuerung.zeigeFehler() : w === "deadletter" ? steuerung.zeigeDeadLetter() : w === "kennzahlen" ? steuerung.zeigeKennzahlen() : steuerung.ladeListe());
+    void (w === "einstellungen" ? steuerung.zeigeEinstellungen() : w === "fehler" ? steuerung.zeigeFehler() : w === "deadletter" ? steuerung.zeigeDeadLetter() : w === "kennzahlen" ? steuerung.zeigeKennzahlen() : w === "geparkt" ? steuerung.zeigeGeparkt() : steuerung.ladeListe());
   } else if (bearbeite) steuerung.bearbeite(bearbeite.dataset.bearbeite ?? "");
   else if (erneut) void steuerung.reiheErneutEin(Number(erneut.dataset.erneut));
   else if (quittiere) void steuerung.quittiere(Number(quittiere.dataset.quittiere));
@@ -54,4 +102,5 @@ wurzel.addEventListener("change", (e) => {
   } else if (ziel.matches("[data-filter]")) void steuerung.setzeFilter((ziel as HTMLSelectElement).value || null);
 });
 
-void steuerung.start();
+if (appModus && !kopplung) zeigeKopplung();
+else void steuerung.start().then(() => merkeBeschriftungen(steuerung.zustand.beschriftungen));

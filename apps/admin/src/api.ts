@@ -149,6 +149,26 @@ export interface Dauer {
   max: number | null;
 }
 
+export interface GeparkterEintrag {
+  id: string;
+  kontakt: string;
+  kanal: string;
+  nutzlast: { name?: string; betreff?: string; text?: string; [feld: string]: unknown } | null;
+  /** Rohwert (flutschutz, mail_unklar, ki_sonstiges, ki_rueckfrage_unzuordenbar); der Nutzertext steht in den Beschriftungen `geparktGrund.<grund>`. */
+  grund: string;
+  erstellt_am: string;
+  geprueft_am: string | null;
+  geprueft_von: string | null;
+  entscheidung: "freigegeben" | "verworfen" | null;
+  anfrage_id: string | null;
+}
+
+export interface GeparktFreigabe {
+  name?: string;
+  fahrzeug: { marke: string; modell: string };
+  kennzeichen?: string;
+}
+
 export interface Kennzahlen {
   zeitraum: { von: string; bis: string };
   anfragen: number;
@@ -157,6 +177,15 @@ export interface Kennzahlen {
   konfidenz: { berichte: number; mittel: number | null; klassen: { von: number | null; bis: number | null; anzahl: number }[] };
   fehlerrate: { bewertungen: number; fehlgeschlagen: number; rate: number | null };
   freigabedauer: Dauer;
+  ki: {
+    aufrufe: number;
+    anfragen: number;
+    tokenEin: number;
+    tokenAus: number;
+    kostenEuro: number;
+    kostenJeAnfrage: number | null;
+    faehigkeiten: Record<string, { aufrufe: number; tokenEin: number; tokenAus: number; kostenEuro: number }>;
+  };
 }
 
 export interface AbweichungsZeile {
@@ -190,11 +219,23 @@ export class ApiFehler extends Error {
 
 export type Abruf = (url: string, init?: RequestInit) => Promise<Response>;
 
-export function erzeugeApi(abruf: Abruf, basis = "/api/admin") {
+export interface ApiOptionen {
+  /** Geräte-Token der App; fehlt es, geht kein Authorization-Kopf mit (Admin-Web hinter Access). */
+  token?: () => string | null;
+  /** Pfad der Anfragen unter der Basis: im Admin `/anfragen`, in der App-API die Wurzel. */
+  anfragen?: string;
+  /** App-API: Beschriftungen und Statusnamen kommen gemeinsam aus `GET /beschriftungen`. */
+  gemeinsameBeschriftungen?: boolean;
+}
+
+export function erzeugeApi(abruf: Abruf, basis = "/api/admin", optionen: ApiOptionen = {}) {
+  const anfragenPfad = optionen.anfragen ?? "/anfragen";
   async function rufe<T>(pfad: string, init?: RequestInit): Promise<T> {
     let antwort: Response;
     try {
-      antwort = await abruf(`${basis}${pfad}`, init);
+      const token = optionen.token?.();
+      const mitToken = token ? { ...init, headers: { ...(init?.headers as Record<string, string> | undefined), authorization: `Bearer ${token}` } } : init;
+      antwort = await abruf(`${basis}${pfad}`, mitToken);
     } catch {
       throw new ApiFehler("NETZ", "", 0);
     }
@@ -206,9 +247,24 @@ export function erzeugeApi(abruf: Abruf, basis = "/api/admin") {
     return koerper as T;
   }
 
+  let gemeinsam: Promise<{ beschriftungen: Beschriftungen; statusBeschriftungen: Record<string, string> }> | null = null;
+  const ladeGemeinsam = () => {
+    gemeinsam ??= rufe<{ beschriftungen: Beschriftungen; statusBeschriftungen: Record<string, string> }>("/beschriftungen");
+    gemeinsam.catch(() => {
+      gemeinsam = null;
+    });
+    return gemeinsam;
+  };
+
   return {
-    beschriftungen: async (): Promise<Beschriftungen> => (await rufe<{ wert: Beschriftungen }>("/einstellungen/oberflaeche.beschriftungen")).wert,
-    statusNamen: async (): Promise<Record<string, string>> => (await rufe<{ wert: Record<string, string> }>("/einstellungen/ablauf.statusBeschriftungen")).wert,
+    beschriftungen: async (): Promise<Beschriftungen> =>
+      optionen.gemeinsameBeschriftungen
+        ? (await ladeGemeinsam()).beschriftungen
+        : (await rufe<{ wert: Beschriftungen }>("/einstellungen/oberflaeche.beschriftungen")).wert,
+    statusNamen: async (): Promise<Record<string, string>> =>
+      optionen.gemeinsameBeschriftungen
+        ? (await ladeGemeinsam()).statusBeschriftungen
+        : (await rufe<{ wert: Record<string, string> }>("/einstellungen/ablauf.statusBeschriftungen")).wert,
     einstellungen: (): Promise<{ abdruck: string; eintraege: EinstellungsEintrag[] }> => rufe("/einstellungen"),
     setzeEinstellung: (schluessel: string, wert: unknown, version: number): Promise<EinstellungsEintrag> =>
       rufe(`/einstellungen/${encodeURIComponent(schluessel)}`, {
@@ -227,9 +283,9 @@ export function erzeugeApi(abruf: Abruf, basis = "/api/admin") {
     liste(status: string | null, seite: number): Promise<Liste> {
       const q = new URLSearchParams({ seite: String(seite) });
       if (status) q.set("status", status);
-      return rufe<Liste>(`/anfragen?${q}`);
+      return rufe<Liste>(`${anfragenPfad}?${q}`);
     },
-    detail: (id: string): Promise<Detail> => rufe<Detail>(`/anfragen/${encodeURIComponent(id)}`),
+    detail: (id: string): Promise<Detail> => rufe<Detail>(`${anfragenPfad}/${encodeURIComponent(id)}`),
     deadLetterListe: async (alle = false): Promise<DeadLetterEintrag[]> => (await rufe<{ eintraege: DeadLetterEintrag[] }>(`/dead-letter${alle ? "?alle=1" : ""}`)).eintraege,
     erneutEinreihen: (id: number): Promise<DeadLetterEintrag> => rufe(`/dead-letter/${id}/erneut`, { method: "POST" }),
     kennzahlen(von?: string, bis?: string): Promise<Kennzahlen> {
@@ -239,9 +295,14 @@ export function erzeugeApi(abruf: Abruf, basis = "/api/admin") {
       const s = q.toString();
       return rufe<Kennzahlen>(`/kennzahlen${s ? `?${s}` : ""}`);
     },
+    geparktListe: async (): Promise<GeparkterEintrag[]> => (await rufe<{ eintraege: GeparkterEintrag[] }>("/geparkt")).eintraege,
+    geparktPruefen: (id: string): Promise<GeparkterEintrag> => rufe(`/geparkt/${encodeURIComponent(id)}/pruefen`, { method: "POST" }),
+    geparktVerwerfen: (id: string): Promise<GeparkterEintrag> => rufe(`/geparkt/${encodeURIComponent(id)}/verwerfen`, { method: "POST" }),
+    geparktFreigeben: (id: string, freigabe: GeparktFreigabe): Promise<{ id: string }> =>
+      rufe(`/geparkt/${encodeURIComponent(id)}/freigeben`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(freigabe) }),
     abweichungen: (): Promise<Abweichungen> => rufe("/anfragen/auswertung/ankaeufe"),
     aktion: (id: string, aktion: string, version: number, notiz?: string, ankaufspreisEuro?: number): Promise<{ version: number }> =>
-      rufe(`/anfragen/${encodeURIComponent(id)}/aktion`, {
+      rufe(`${anfragenPfad}/${encodeURIComponent(id)}/aktion`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ aktion, version, ...(notiz ? { notiz } : {}), ...(ankaufspreisEuro !== undefined ? { ankaufspreisEuro } : {}) }),

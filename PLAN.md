@@ -38,7 +38,7 @@ nicht Rechnen; geteilte Typen mit React wiegen mehr.
 | `packages/shared` | zod-Schemas, Fehlerkatalog, Einstellungs-Registry, Statusmaschine, KI-Port |
 | `apps/api` | Cloudflare Worker + Hono, D1, Queues, KV (Cache), R2 (Berichte), Cron-Trigger |
 | `apps/web` | React + Vite (Admin-Oberfläche, Formular) — Phase 1 |
-| App | Expo oder Capacitor — Phase 6 |
+| App | Capacitor (Android-APK aus `apps/admin`) — Phase 7 |
 
 ## Anfrage-Ablauf (Statusmaschine)
 
@@ -183,22 +183,34 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 - [ ] Referenzdaten-Abgleich (A13)
 - [ ] Nutzungsbedingungen geprüft und im Repo vermerkt
 
-### Phase 6 — KI-Anschluss
+### Phase 6 — KI-Anschluss — fertig
 
-- [ ] Claude-Adapter für den `KiAnschluss`-Port, je Fähigkeit schaltbar
-- [ ] Jede Fähigkeit hat einen Test „KI aus → gleicher Ablauf ohne KI“
-- [ ] Tagesbudget greift; Kosten je Anfrage erfasst
+- [x] Claude-Adapter für den `KiAnschluss`-Port mit dem offiziellen `@anthropic-ai/sdk`; Modell, Aufwand und Fähigkeiten aus der Registry (`ki.*`), je Fähigkeit schaltbar
+- [x] Freitext auslesen und Fahrzeugschein-Foto auslesen mit strukturierter Ausgabe (zod), Sicherheit je Feld; unter der Schwelle aus der Registry wird nachgefragt statt übernommen
+- [x] Anfrage einordnen (Bewertung, Rückfrage-Antwort, sonstiges, Spam) im E-Mail-Eingang; „sonstiges“ → `an_mensch`
+- [x] Berichtstext formulieren: alle Zahlen kommen aus dem Bewertungskern; ein Test belegt, dass keine Zahl aus der KI-Antwort in Preis oder Bericht übernommen wird
+- [x] Jede Fähigkeit hat einen Test „KI aus → gleicher Ablauf ohne KI“
+- [x] Tagesbudget greift (`ki.tagesbudgetEuro`); Token und Kosten je Anfrage gespeichert und in den Kennzahlen sichtbar
+- [x] Ablehnung (`refusal`), Zeitüberschreitung und API-Fehler enden mit Fehlercode aus dem Katalog und dem Weg ohne KI
+- [x] Prompt-Injection-Test: Kundentext mit Anweisungen ändert weder Preis noch Status noch Empfänger
+- [x] Alle KI-Aufrufe laufen in Tests gegen eine Attrappe; kein echter Schlüssel nötig, Schlüsselname in `.dev.vars.example`
 
 ### Phase 7 — Smartphone-App
 
-- [ ] App gegen dieselbe API mit Geräte-Tokens
-- [ ] Freigabe und Abwicklung mobil
+- [x] Geräte-Kopplung: Admin erzeugt einen Kopplungscode, das Gerät tauscht ihn gegen ein Geräte-Token; Token nur gehasht in D1, widerrufbar, Laufzeit aus der Registry
+- [x] App-API unter `/api/app/*` mit Geräte-Token: Liste, Detail, Freigabe-Aktionen, Ankaufspreis erfassen — dieselben Regeln und Fehlercodes wie der Admin-Bereich
+- [x] Android-App mit Capacitor aus `apps/admin` (App-Modus); API-Adresse aus der Kopplung, nicht im Code
+- [x] Push bei neuer Freigabe über einen Push-Port (Attrappe in Tests, Schlüsselnamen in `.dev.vars.example`)
+- [x] `npm run apk -w @kfz/admin` baut eine Debug-APK; der Befehl steht im README
+- [x] Ende-zu-Ende-Test: Gerät koppeln → Freigabe über die App-API → Status `freigegeben`; widerrufenes Token wird abgewiesen
 
 ## Braucht einen Menschen
 
 | Was | Für | Blockiert |
 |---|---|---|
 | mobile.de-Search-API beantragen | Live-Daten | Phase 5 |
-| GitHub-Repo anlegen | CI, PR-Überwachung | nichts, aber vor dem ersten PR |
+| Manager-Endpunkt `/kfz/versand` im WhatsApp-Manager bauen | WhatsApp-Versand | Phase 4 |
+| Merge-Automatik einschalten | Automatischer Merge nach `main` | Sammel-PRs mergen von Hand |
+| Anthropic-Schlüssel über den Business Manager | Echte KI-Aufrufe | Betrieb von Phase 6, nicht die Entwicklung |
 | Cloudflare-Konto verbinden (`/mcp`), D1/Queues anlegen | Erster echter Deploy | Deploy, nicht die Entwicklung |
 | Geheimnisse über den Business Manager | mobile.de, Webhook-Schlüssel, Mail | Phase 3–5 |

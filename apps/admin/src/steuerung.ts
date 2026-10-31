@@ -8,6 +8,7 @@ import {
   type Detail,
   type EinstellungsEintrag,
   type FehlerEintrag,
+  type GeparkterEintrag,
   type Kennzahlen,
   type Liste,
   type Vorschau,
@@ -30,7 +31,7 @@ export interface Bearbeitung {
 }
 
 export interface Zustand {
-  ansicht: "liste" | "detail" | "einstellungen" | "fehler" | "deadletter" | "kennzahlen";
+  ansicht: "liste" | "detail" | "einstellungen" | "fehler" | "deadletter" | "kennzahlen" | "geparkt";
   laedt: boolean;
   beschriftungen: Beschriftungen;
   statusNamen: Record<string, string>;
@@ -43,10 +44,19 @@ export interface Zustand {
   bearbeitung: Bearbeitung | null;
   fehlerListe: FehlerEintrag[] | null;
   deadLetter: DeadLetterEintrag[] | null;
+  geparkt: GeparkterEintrag[] | null;
   kennzahlen: Kennzahlen | null;
   abweichungen: Abweichungen | null;
   /** Gewählter Zeitraum als Datum (JJJJ-MM-TT); leer = Standardzeitraum der API. */
   zeitraum: { von: string; bis: string };
+  /** App-Modus: nur Liste und Detail, keine Einstellungen, Fehler, Dead-Letter und Kennzahlen. */
+  appModus: boolean;
+}
+
+export interface SteuerungOptionen {
+  appModus?: boolean;
+  /** Die API hat das Geräte-Token abgelehnt (401 / GERAET_WIDERRUFEN): Kopplung löschen, Kopplungsansicht zeigen. */
+  beiWiderruf?: () => void;
 }
 
 /**
@@ -68,15 +78,20 @@ export class Steuerung {
     bearbeitung: null,
     fehlerListe: null,
     deadLetter: null,
+    geparkt: null,
     kennzahlen: null,
     abweichungen: null,
     zeitraum: { von: "", bis: "" },
+    appModus: false,
   };
 
   constructor(
     private readonly api: Api,
     private readonly bei: (z: Zustand) => void = () => {},
-  ) {}
+    private readonly optionen: SteuerungOptionen = {},
+  ) {
+    this.zustand.appModus = optionen.appModus ?? false;
+  }
 
   private setze(teil: Partial<Zustand>): void {
     this.zustand = { ...this.zustand, ...teil };
@@ -85,15 +100,20 @@ export class Steuerung {
 
   private fehler(e: unknown): void {
     const f = e instanceof ApiFehler ? e : new ApiFehler("UNBEKANNT", "", 0);
+    if (this.optionen.appModus && (f.status === 401 || f.code === "GERAET_WIDERRUFEN")) {
+      this.optionen.beiWiderruf?.();
+      return;
+    }
     this.setze({
       laedt: false,
-      meldung: { art: "fehler", code: f.code, text: f.text, ...(f.korrelationsId ? { korrelationsId: f.korrelationsId } : {}) },
+      meldung: { art: "fehler", code: f.code, text: f.text || this.zustand.beschriftungen[`appFehler.${f.code}`] || "", ...(f.korrelationsId ? { korrelationsId: f.korrelationsId } : {}) },
     });
   }
 
   async start(): Promise<void> {
     this.setze({ laedt: true });
     // Beschriftungen sind Komfort: fehlen sie, zeigt die Ansicht die Schlüssel, statt zu scheitern.
+    // In der App kommen beide aus GET /api/app/beschriftungen (die Api teilt sich den einen Abruf).
     const [b, s] = await Promise.all([this.api.beschriftungen().catch(() => ({})), this.api.statusNamen().catch(() => ({}))]);
     this.setze({ beschriftungen: b, statusNamen: s });
     await this.ladeListe();
@@ -234,6 +254,52 @@ export class Steuerung {
       return;
     }
     await this.zeigeDeadLetter(hinweis);
+  }
+
+  async zeigeGeparkt(meldung: Meldung | null = null): Promise<void> {
+    this.setze({ ansicht: "geparkt", laedt: true, meldung });
+    try {
+      const geparkt = await this.api.geparktListe();
+      this.setze({ geparkt, laedt: false });
+    } catch (e) {
+      this.fehler(e);
+    }
+  }
+
+  async pruefeGeparkt(id: string): Promise<void> {
+    await this.geparktSchritt(() => this.api.geparktPruefen(id));
+  }
+
+  async verwirfGeparkt(id: string): Promise<void> {
+    await this.geparktSchritt(() => this.api.geparktVerwerfen(id));
+  }
+
+  /** Marke und Modell kommen vom Admin; ob die Freigabe sonst gültig ist, entscheidet die API (EINGABE_UNGUELTIG). */
+  async gibGeparktFrei(id: string, marke: string, modell: string, name?: string, kennzeichen?: string): Promise<void> {
+    await this.geparktSchritt(() =>
+      this.api.geparktFreigeben(id, {
+        fahrzeug: { marke: marke.trim(), modell: modell.trim() },
+        ...(name?.trim() ? { name: name.trim() } : {}),
+        ...(kennzeichen?.trim() ? { kennzeichen: kennzeichen.trim() } : {}),
+      }),
+    );
+  }
+
+  /** Schon entschieden (STATUSWECHSEL_UNZULAESSIG / VERSION_KONFLIKT): die Liste neu zu laden zeigt den wahren Stand. */
+  private async geparktSchritt(aufruf: () => Promise<unknown>): Promise<void> {
+    if (this.zustand.laedt) return;
+    this.setze({ laedt: true, meldung: null });
+    try {
+      await aufruf();
+    } catch (e) {
+      if (e instanceof ApiFehler && (e.code === "STATUSWECHSEL_UNZULAESSIG" || e.code === "VERSION_KONFLIKT")) {
+        await this.zeigeGeparkt({ art: "konflikt", code: e.code, text: e.text });
+        return;
+      }
+      this.fehler(e);
+      return;
+    }
+    await this.zeigeGeparkt();
   }
 
   async zeigeKennzahlen(): Promise<void> {

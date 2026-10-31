@@ -10,6 +10,8 @@ export interface RenderEingabe {
   vorlagen: BerichtVorlagen;
   sprache: string;
   gueltigBis: Date;
+  /** Optionaler KI-Text; reiner Klartext, wird escaped. Fehlt er, entsteht der Bericht wie ohne KI. */
+  kiText?: string | null;
 }
 
 export interface Gerendert {
@@ -92,6 +94,7 @@ function platzhalter(e: RenderEingabe, hinweis: string, sprache: string): Werte 
     suchstufeUmkreisKm: t(stufe ? (stufe.umkreisKm === null ? "–" : zahl(stufe.umkreisKm, sprache)) : ""),
     gueltigBis: t(datum(e.gueltigBis, sprache)),
     hinweis: t(hinweis),
+    kiText: t(e.kiText ?? ""),
     vergleichsZeilen: { text: zeilen, roh: true },
     regelnListe: { text: regelnListe, roh: true },
   };
@@ -111,6 +114,8 @@ export function rendereBericht(e: RenderEingabe): Gerendert {
   const { sprache, vorlage } = waehleVorlage(e.vorlagen, e.sprache);
   const werte = platzhalter(e, vorlage.hinweis, sprache);
   let html = ersetze(vorlage.html, werte, true);
+  // Ohne eigenen Platzhalter in der Vorlage steht der KI-Absatz am Ende; ohne Text entsteht nichts.
+  if (e.kiText && !/\{\{\s*kiText\s*\}\}/.test(vorlage.html)) html += `<p class="ki-text">${htmlEscape(e.kiText)}</p>`;
   if (!/\{\{\s*hinweis\s*\}\}/.test(vorlage.html)) html += `<p><small>${htmlEscape(vorlage.hinweis)}</small></p>`;
   return { sprache, betreff: ersetze(vorlage.betreff, werte, false), html };
 }
