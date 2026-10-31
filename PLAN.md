@@ -210,7 +210,7 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 |---|---|---|
 | mobile.de-Search-API beantragen | Live-Daten | Phase 5 |
 | Manager-Endpunkt `/kfz/versand` im WhatsApp-Manager bauen | WhatsApp-Versand | Phase 4 |
-| codemap-App-Dienst starten (Schlüssel vom Business Manager) | Automatischer Merge nach `main` | Sammel-PRs mergen von Hand |
+| Merge-Automatik einschalten | Automatischer Merge nach `main` | Sammel-PRs mergen von Hand |
 | Anthropic-Schlüssel über den Business Manager | Echte KI-Aufrufe | Betrieb von Phase 6, nicht die Entwicklung |
 | Cloudflare-Konto verbinden (`/mcp`), D1/Queues anlegen | Erster echter Deploy | Deploy, nicht die Entwicklung |
 | Geheimnisse über den Business Manager | mobile.de, Webhook-Schlüssel, Mail | Phase 3–5 |
