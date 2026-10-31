@@ -47,6 +47,14 @@ export interface Zustand {
   abweichungen: Abweichungen | null;
   /** Gewählter Zeitraum als Datum (JJJJ-MM-TT); leer = Standardzeitraum der API. */
   zeitraum: { von: string; bis: string };
+  /** App-Modus: nur Liste und Detail, keine Einstellungen, Fehler, Dead-Letter und Kennzahlen. */
+  appModus: boolean;
+}
+
+export interface SteuerungOptionen {
+  appModus?: boolean;
+  /** Die API hat das Geräte-Token abgelehnt (401 / GERAET_WIDERRUFEN): Kopplung löschen, Kopplungsansicht zeigen. */
+  beiWiderruf?: () => void;
 }
 
 /**
@@ -71,12 +79,16 @@ export class Steuerung {
     kennzahlen: null,
     abweichungen: null,
     zeitraum: { von: "", bis: "" },
+    appModus: false,
   };
 
   constructor(
     private readonly api: Api,
     private readonly bei: (z: Zustand) => void = () => {},
-  ) {}
+    private readonly optionen: SteuerungOptionen = {},
+  ) {
+    this.zustand.appModus = optionen.appModus ?? false;
+  }
 
   private setze(teil: Partial<Zustand>): void {
     this.zustand = { ...this.zustand, ...teil };
@@ -85,6 +97,10 @@ export class Steuerung {
 
   private fehler(e: unknown): void {
     const f = e instanceof ApiFehler ? e : new ApiFehler("UNBEKANNT", "", 0);
+    if (this.optionen.appModus && (f.status === 401 || f.code === "GERAET_WIDERRUFEN")) {
+      this.optionen.beiWiderruf?.();
+      return;
+    }
     this.setze({
       laedt: false,
       meldung: { art: "fehler", code: f.code, text: f.text, ...(f.korrelationsId ? { korrelationsId: f.korrelationsId } : {}) },
@@ -94,7 +110,8 @@ export class Steuerung {
   async start(): Promise<void> {
     this.setze({ laedt: true });
     // Beschriftungen sind Komfort: fehlen sie, zeigt die Ansicht die Schlüssel, statt zu scheitern.
-    const [b, s] = await Promise.all([this.api.beschriftungen().catch(() => ({})), this.api.statusNamen().catch(() => ({}))]);
+    // Die App-API kennt keine Einstellungen-Routen; dort kommen die Statusnamen aus der Liste selbst.
+    const [b, s] = await Promise.all([this.api.beschriftungen().catch(() => ({})), this.optionen.appModus ? {} : this.api.statusNamen().catch(() => ({}))]);
     this.setze({ beschriftungen: b, statusNamen: s });
     await this.ladeListe();
   }

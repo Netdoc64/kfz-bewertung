@@ -1,14 +1,27 @@
-import { erzeugeApi } from "./api.js";
-import { rendere } from "./ansicht.js";
+import { ApiFehler, erzeugeApi } from "./api.js";
+import { rendere, rendereKopplung } from "./ansicht.js";
+import { erzeugeAppApi, istAppModus, koppeln, ladeBeschriftungen, ladeKopplung, loescheKopplung, merkeBeschriftungen, type Kopplung } from "./app-modus.js";
 import { Steuerung } from "./steuerung.js";
 
-const wurzel = document.getElementById("app");
-if (!wurzel) throw new Error("#app fehlt");
+const gefunden = document.getElementById("app");
+if (!gefunden) throw new Error("#app fehlt");
+const wurzel: HTMLElement = gefunden;
 
 const preisFeld = () => wurzel.querySelector<HTMLInputElement>("[data-preis]");
 const notizFeld = () => wurzel.querySelector<HTMLInputElement>("[data-notiz]");
 
-const steuerung = new Steuerung(erzeugeApi((url, init) => fetch(url, init)), (z) => {
+const abruf = (url: string, init?: RequestInit) => fetch(url, init);
+const appModus = istAppModus(window as { Capacitor?: unknown });
+let kopplung: Kopplung | null = appModus ? ladeKopplung() : null;
+
+function zeigeKopplung(fehler: { code: string; text: string } | null = null, laedt = false): void {
+  const b = ladeBeschriftungen();
+  wurzel.innerHTML = rendereKopplung((k) => b[k] ?? k, fehler, laedt, kopplung?.adresse ?? "");
+}
+
+const steuerung = new Steuerung(
+  appModus && kopplung ? erzeugeAppApi(abruf, kopplung) : erzeugeApi(abruf),
+  (z) => {
   // Eine eingetippte Notiz überlebt das Neuzeichnen nicht von selbst.
   const notiz = notizFeld()?.value ?? "";
   const preis = preisFeld()?.value ?? "";
@@ -17,6 +30,29 @@ const steuerung = new Steuerung(erzeugeApi((url, init) => fetch(url, init)), (z)
   if (feld) feld.value = notiz;
   const pf = preisFeld();
   if (pf) pf.value = preis;
+  },
+  {
+    appModus,
+    beiWiderruf: () => {
+      loescheKopplung();
+      zeigeKopplung();
+    },
+  },
+);
+
+wurzel.addEventListener("submit", (e) => {
+  const form = e.target as HTMLFormElement;
+  if (!form.matches("[data-koppeln]")) return;
+  e.preventDefault();
+  const wert = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
+  zeigeKopplung(null, true);
+  void koppeln(abruf, { adresse: wert("adresse"), code: wert("code"), name: wert("name") || (navigator.platform || "App") }).then(
+    () => location.reload(),
+    (err: unknown) => {
+      const f = err instanceof ApiFehler ? err : new ApiFehler("UNBEKANNT", "", 0);
+      zeigeKopplung({ code: f.code, text: f.text });
+    },
+  );
 });
 
 wurzel.addEventListener("click", (e) => {
@@ -54,4 +90,5 @@ wurzel.addEventListener("change", (e) => {
   } else if (ziel.matches("[data-filter]")) void steuerung.setzeFilter((ziel as HTMLSelectElement).value || null);
 });
 
-void steuerung.start();
+if (appModus && !kopplung) zeigeKopplung();
+else void steuerung.start().then(() => merkeBeschriftungen(steuerung.zustand.beschriftungen));

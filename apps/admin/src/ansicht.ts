@@ -36,10 +36,12 @@ function navigation(z: Zustand, t: T): string {
   const knopf = (ziel: string, text: string, aktiv: boolean) =>
     `<button data-nav="${ziel}"${aktiv ? ' disabled aria-current="page"' : ""}>${esc(text)}</button>`;
   const anfragen = z.ansicht === "liste";
+  if (z.appModus) return `<nav class="haupt">${knopf("anfragen", t("navAnfragen"), anfragen)}</nav>`;
   return `<nav class="haupt">${knopf("anfragen", t("navAnfragen"), anfragen)} ${knopf("einstellungen", t("navEinstellungen"), z.ansicht === "einstellungen")} ${knopf("fehler", t("navFehler"), z.ansicht === "fehler")} ${knopf("deadletter", t("navDeadLetter"), z.ansicht === "deadletter")} ${knopf("kennzahlen", t("navKennzahlen"), z.ansicht === "kennzahlen")}</nav>`;
 }
 
 function filterLeiste(z: Zustand, t: T): string {
+  if (!Object.keys(z.statusNamen).length) return "";
   const optionen = Object.entries(z.statusNamen)
     .map(([k, name]) => `<option value="${esc(k)}"${z.filter === k ? " selected" : ""}>${esc(name)}</option>`)
     .join("");
@@ -258,6 +260,18 @@ export function rendereKennzahlen(z: Zustand): string {
       abweichungsBlock(z, t);
   }
   return `${navigation(z, t)}<h1>${esc(t("kennzahlenTitel"))}</h1>${meldung(z, t)}${wahl}${inhalt}`;
+}
+
+/** Kopplungsansicht des App-Modus: API-Adresse, Kopplungscode und Gerätename. */
+export function rendereKopplung(t: T, fehler: { code: string; text: string } | null, laedt: boolean, adresse = ""): string {
+  const meldung = fehler ? `<div class="meldung fehler" role="alert"><strong>${esc(t("fehler"))} ${esc(fehler.code)}:</strong> ${esc(fehler.text)}</div>` : "";
+  return (
+    `<h1>${esc(t("kopplungTitel"))}</h1>${meldung}` +
+    `<form data-koppeln><p><label>${esc(t("kopplungAdresse"))} <input name="adresse" inputmode="url" autocomplete="off" value="${esc(adresse)}"></label></p>` +
+    `<p><label>${esc(t("kopplungCode"))} <input name="code" autocomplete="off"></label></p>` +
+    `<p><label>${esc(t("kopplungName"))} <input name="name" maxlength="80" autocomplete="off"></label></p>` +
+    `<button type="submit"${laedt ? " disabled" : ""}>${esc(laedt ? t("laedt") : t("kopplungKnopf"))}</button></form>`
+  );
 }
 
 export const rendere = (z: Zustand): string =>
