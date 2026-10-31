@@ -40,7 +40,7 @@ export const fehlerBehandlung: ErrorHandler<AppUmgebung> = async (e, c) => {
   } catch {
     // DB weg — Standard nutzen.
   }
-  const speichern = fehlerSpeichern(c.env.DB, { fehler: f, ort: ort(c), korrelationsId }, schwelle);
+  const speichern = fehlerSpeichern(c.env.DB, { fehler: f, ort: ort(c), korrelationsId }, schwelle, c.env.EMAIL);
   try {
     c.executionCtx.waitUntil(speichern);
   } catch {

@@ -4,3 +4,6 @@
 # MOBILEDE_PASSWORT=
 # WEBHOOK_HMAC_SCHLUESSEL=
 # KI_API_SCHLUESSEL=
+# Phase 4 — Versand über den Manager (docs/manager-versand.md):
+# MANAGER_VERSAND_URL=
+# MANAGER_VERSAND_HMAC_SCHLUESSEL=
