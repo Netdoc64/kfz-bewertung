@@ -28,6 +28,8 @@ jobs:
         run: npm run typecheck
       - name: Tests
         run: npm test
+      - name: Testabdeckung (Mindestwerte)
+        run: npm run coverage
       - name: Worker bündeln (ohne Deploy)
         working-directory: apps/api
         run: npx wrangler deploy --dry-run --outdir ../../.wrangler/dry
