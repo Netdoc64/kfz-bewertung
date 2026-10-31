@@ -1,4 +1,5 @@
 import { STUFEN, meldeFreigabe, ueberspringeStufe, type Stufe } from "../benachrichtigung/index.js";
+import type { PushAnschluss } from "../push/port.js";
 import type { Einstellungen } from "../einstellungen/dienst.js";
 
 /** Ergebnis einer Aufgabe: wie viele Zeilen sie angefasst hat, optional mit Hinweis. */
@@ -49,7 +50,7 @@ export async function rueckfrageTimeout(db: D1Database, einstellungen: Einstellu
  * `benachrichtigung.eskalationNachStunden` die Eskalation. Je Anfrage, Generation und Stufe
  * genau eine Mail; ist eine höhere Stufe fällig, entfallen die niedrigeren ohne Mail.
  */
-export async function freigabeErinnerung(db: D1Database, einstellungen: Einstellungen, email: SendEmail, jetzt = Date.now()): Promise<AufgabenErgebnis> {
+export async function freigabeErinnerung(db: D1Database, einstellungen: Einstellungen, email: SendEmail, jetzt = Date.now(), push?: PushAnschluss): Promise<AufgabenErgebnis> {
   if ((await einstellungen.lese("benachrichtigung.kanal")) === "aus") return { bearbeitet: 0, uebersprungen: true, notiz: "benachrichtigung.kanal ist aus" };
   const nachStunden: Record<Stufe, number> = {
     neu: 0,
@@ -67,7 +68,7 @@ export async function freigabeErinnerung(db: D1Database, einstellungen: Einstell
     const hoechste = faellig[faellig.length - 1];
     if (!hoechste) continue;
     try {
-      if (await meldeFreigabe(db, einstellungen, email, r, hoechste, stunden)) n++;
+      if (await meldeFreigabe(db, einstellungen, email, r, hoechste, stunden, push)) n++;
       for (const s of faellig.slice(0, -1)) await ueberspringeStufe(db, r, s);
     } catch (e) {
       erster ??= e;

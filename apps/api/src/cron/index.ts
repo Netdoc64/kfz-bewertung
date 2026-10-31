@@ -3,6 +3,7 @@ import type { Bindings } from "../env.js";
 import { AppFehler, alsAppFehler } from "../fehler/app-fehler.js";
 import { mitFehlerspeicher } from "../fehler/handler.js";
 import { fehlerSpeichern } from "../fehler/speicher.js";
+import { pushFuer } from "../push/index.js";
 import { berichtsablauf, dsgvoLoeschung, fehlerAufraeumen, freigabeErinnerung, referenzAbgleich, rueckfrageTimeout, type AufgabenErgebnis } from "./aufgaben.js";
 import { holeNach, meldeGeparkte } from "./nachholen.js";
 
@@ -64,7 +65,7 @@ export async function fuehreCronAus(controller: ScheduledController, env: Bindin
     }
 
     sammle(await laufe(env, "rueckfrageTimeout", schalter.rueckfrageTimeout, korrelationsId, abSchwere, () => rueckfrageTimeout(env.DB, einstellungen, korrelationsId, jetzt)));
-    sammle(await laufe(env, "freigabeErinnerung", schalter.freigabeErinnerung, korrelationsId, abSchwere, () => freigabeErinnerung(env.DB, einstellungen, env.EMAIL, jetzt)));
+    sammle(await laufe(env, "freigabeErinnerung", schalter.freigabeErinnerung, korrelationsId, abSchwere, () => freigabeErinnerung(env.DB, einstellungen, env.EMAIL, jetzt, pushFuer(env))));
     sammle(await laufe(env, "berichtsablauf", schalter.berichtsablauf, korrelationsId, abSchwere, () => berichtsablauf(env.DB, korrelationsId, jetzt)));
     sammle(await laufe(env, "dsgvoLoeschung", schalter.dsgvoLoeschung, korrelationsId, abSchwere, () => dsgvoLoeschung(env.DB, einstellungen, jetzt)));
     sammle(await laufe(env, "fehlerAufraeumen", schalter.fehlerAufraeumen, korrelationsId, abSchwere, () => fehlerAufraeumen(env.DB, einstellungen, jetzt)));
