@@ -1,4 +1,4 @@
-import type { Aktion, Anfrage, Dauer, Detail } from "./api.js";
+import type { Aktion, Anfrage, Dauer, Detail, Kennzahlen } from "./api.js";
 import type { Bearbeitung, Zustand } from "./steuerung.js";
 
 const ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -14,6 +14,15 @@ const datum = (iso: string) => {
 
 type T = (schluessel: string) => string;
 const beschrifter = (z: Zustand): T => (k) => z.beschriftungen[k] ?? k;
+
+function kiBlock(k: Kennzahlen["ki"], t: T): string {
+  const zeilen = Object.entries(k.faehigkeiten)
+    .map(([f, n]) => `<tr><td>${esc(f)}</td><td>${esc(zahl(n.aufrufe))}</td><td>${esc(zahl(n.tokenEin))}</td><td>${esc(zahl(n.tokenAus))}</td><td>${esc(kiEuro(n.kostenEuro))}</td></tr>`)
+    .join("");
+  const kopf = `<th>${esc(t("kennzahlKiFaehigkeit"))}</th><th>${esc(t("kennzahlKiAufrufe"))}</th><th>${esc(t("kennzahlKiTokenEin"))}</th><th>${esc(t("kennzahlKiTokenAus"))}</th><th>${esc(t("kennzahlKiKosten"))}</th>`;
+  const summe = `<p>${esc(t("kennzahlKiAufrufe"))}: ${esc(zahl(k.aufrufe))}, ${esc(t("kennzahlKiTokenEin"))}: ${esc(zahl(k.tokenEin))}, ${esc(t("kennzahlKiTokenAus"))}: ${esc(zahl(k.tokenAus))}, ${esc(t("kennzahlKiKosten"))}: ${esc(kiEuro(k.kostenEuro))}, ${esc(t("kennzahlKiKostenJeAnfrage"))}: ${esc(kiEuro(k.kostenJeAnfrage))}</p>`;
+  return `<section><h2>${esc(t("kennzahlKi"))}</h2>${k.aufrufe ? `${summe}<table><thead><tr>${kopf}</tr></thead><tbody>${zeilen}</tbody></table>` : `<p>${esc(t("kennzahlKiLeer"))}</p>`}</section>`;
+}
 
 function meldung(z: Zustand, t: T): string {
   const m = z.meldung;
@@ -199,6 +208,7 @@ export function rendereDeadLetter(z: Zustand): string {
 
 const prozent = (w: number | null) => (w === null ? "–" : new Intl.NumberFormat("de-DE", { style: "percent", maximumFractionDigits: 1 }).format(w));
 const zahl = (w: number | null) => (w === null ? "–" : new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(w));
+const kiEuro = (w: number | null) => (w === null ? "–" : new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(w));
 const stunden = (sek: number | null, t: T) => (sek === null ? "–" : `${zahl(sek / 3600)} ${t("einheitStunden")}`);
 const dauerZellen = (d: Dauer | undefined, t: T) =>
   `<td>${esc(d?.anzahl ?? 0)}</td><td>${esc(stunden(d?.mittel ?? null, t))}</td><td>${esc(stunden(d?.median ?? null, t))}</td><td>${esc(stunden(d?.max ?? null, t))}</td>`;
@@ -244,6 +254,7 @@ export function rendereKennzahlen(z: Zustand): string {
       `<section><h2>${esc(t("kennzahlKonfidenz"))}</h2><p>${esc(t("kennzahlMittel"))}: ${esc(zahl(k.konfidenz.mittel))} (${esc(k.konfidenz.berichte)})</p><table><tbody>${klassen}</tbody></table></section>` +
       `<section><h2>${esc(t("kennzahlFehlerrate"))}</h2><p>${esc(k.fehlerrate.fehlgeschlagen)} / ${esc(k.fehlerrate.bewertungen)} (${esc(prozent(k.fehlerrate.rate))})</p></section>` +
       `<section><h2>${esc(t("kennzahlFreigabedauer"))}</h2><table><thead><tr>${kopfDauer}</tr></thead><tbody><tr>${dauerZellen(k.freigabedauer, t)}</tr></tbody></table></section>` +
+      kiBlock(k.ki, t) +
       abweichungsBlock(z, t);
   }
   return `${navigation(z, t)}<h1>${esc(t("kennzahlenTitel"))}</h1>${meldung(z, t)}${wahl}${inhalt}`;
