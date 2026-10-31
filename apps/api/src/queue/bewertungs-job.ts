@@ -3,6 +3,8 @@ import { z } from "zod";
 import type { BewertungsJob } from "../anfragen/index.js";
 import { bewerte, ladeBewertungsEinstellungen, type Bewertung } from "../bewertung/bewerten.js";
 import { berichtSpeichern } from "../bericht/index.js";
+import { kiFuer, type KiClient } from "../ki/index.js";
+import type { Bindings } from "../env.js";
 import { meldeFreigabe } from "../benachrichtigung/index.js";
 import type { Einstellungen } from "../einstellungen/dienst.js";
 import { AppFehler, alsAppFehler } from "../fehler/app-fehler.js";
@@ -32,6 +34,10 @@ export interface JobAbhaengigkeiten {
   /** Für die sofortige Freigabe-Meldung (A3); ohne Angabe holt der Cron sie nach. */
   email?: SendEmail;
   jetzt?: () => Date;
+  /** Für den KI-Anschluss (`kiFuer`); ohne Angabe läuft der Bericht ohne KI. */
+  env?: Bindings;
+  /** Statt des echten KI-Clients (Tests). */
+  kiClient?: KiClient;
 }
 
 interface Zeile {
@@ -144,10 +150,13 @@ export async function verarbeiteBewertungsJob(
   }
 
   const sprache = anfrage.sprache ?? (await einstellungen.lese("antwort.standardSprache"));
+  const ki = abh.env
+    ? await kiFuer(abh.env, einstellungen, { anfrageId: job.anfrageId, korrelationsId: job.korrelation }, { client: abh.kiClient })
+    : undefined;
   await berichtSpeichern(
     db,
     einstellungen,
-    { anfrageId: job.anfrageId, generation: job.generation, fahrzeug, bewertung, sprache, jetzt: (abh.jetzt ?? (() => new Date()))() },
+    { anfrageId: job.anfrageId, generation: job.generation, fahrzeug, bewertung, sprache, jetzt: (abh.jetzt ?? (() => new Date()))(), ki },
     abh.berichte,
   );
 
