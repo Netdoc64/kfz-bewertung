@@ -2,6 +2,7 @@ import { FahrzeugSchema, type AuslesenErgebnis, type Einordnung, type Fahrzeug }
 import PostalMime, { type Attachment, type Email } from "postal-mime";
 import { kiFuer, type KiAbhaengigkeiten } from "../ki/index.js";
 import { haengeAn, legeAn, type AnfrageKontext, type AnfrageUmgebung } from "../anfragen/dienst.js";
+import { pushFuer } from "../push/index.js";
 import type { Bindings } from "../env.js";
 import { Einstellungen } from "../einstellungen/dienst.js";
 import { AppFehler } from "../fehler/app-fehler.js";
@@ -190,6 +191,7 @@ export async function verarbeiteEingang(nachricht: ForwardableEmailMessage, env:
     db: env.DB,
     einstellungen: einst,
     queue: env.BEWERTUNG_QUEUE,
+    push: pushFuer(env),
     email: env.EMAIL,
     kanalFuer: async (kontakt) => (kontakt.includes("@") ? new EmailKanal(env.EMAIL, einst, bezug.messageId ? bezug : undefined) : null),
   };
