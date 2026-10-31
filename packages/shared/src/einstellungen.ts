@@ -564,6 +564,14 @@ export const EINSTELLUNGEN = {
   ),
   "betrieb.dsgvoAuskunftMaxAnfragen": def("betrieb", z.number().int().min(1), 200, "Höchstzahl Anfragen und geparkter Eingänge je Auskunft oder Einzellöschung; darüber wird abgeschnitten gemeldet.", { max: 1000 }),
 
+  // Ratenbegrenzung je Absender (Hash) und Kanal; Fenster fest, Zähler in D1.
+  "ratenlimit.formular.max": def("betrieb", z.number().int().min(1), 10, "Höchstzahl Anfragen je Absender und Fenster am öffentlichen Formular; darüber 429.", { max: 1000 }),
+  "ratenlimit.formular.fensterSekunden": def("betrieb", z.number().int().min(1), 3600, "Länge des Zeitfensters der Ratenbegrenzung am Formular in Sekunden.", { max: 86400 }),
+  "ratenlimit.email.max": def("betrieb", z.number().int().min(1), 20, "Höchstzahl eingehender Mails je Absender und Fenster; darüber wird verworfen, ohne zu antworten.", { max: 1000 }),
+  "ratenlimit.email.fensterSekunden": def("betrieb", z.number().int().min(1), 3600, "Länge des Zeitfensters der Ratenbegrenzung für E-Mail-Eingang in Sekunden.", { max: 86400 }),
+  "ratenlimit.app.max": def("betrieb", z.number().int().min(1), 120, "Höchstzahl Aufrufe der App-API je Absender und Fenster; darüber 429.", { max: 10000 }),
+  "ratenlimit.app.fensterSekunden": def("betrieb", z.number().int().min(1), 60, "Länge des Zeitfensters der Ratenbegrenzung für die App-API in Sekunden.", { max: 86400 }),
+
   // Eingang
   "eingang.maxJeAbsenderUndTag": def(
     "eingang",
