@@ -199,11 +199,21 @@ export class ApiFehler extends Error {
 
 export type Abruf = (url: string, init?: RequestInit) => Promise<Response>;
 
-export function erzeugeApi(abruf: Abruf, basis = "/api/admin") {
+export interface ApiOptionen {
+  /** Geräte-Token der App; fehlt es, geht kein Authorization-Kopf mit (Admin-Web hinter Access). */
+  token?: () => string | null;
+  /** Pfad der Anfragen unter der Basis: im Admin `/anfragen`, in der App-API die Wurzel. */
+  anfragen?: string;
+}
+
+export function erzeugeApi(abruf: Abruf, basis = "/api/admin", optionen: ApiOptionen = {}) {
+  const anfragenPfad = optionen.anfragen ?? "/anfragen";
   async function rufe<T>(pfad: string, init?: RequestInit): Promise<T> {
     let antwort: Response;
     try {
-      antwort = await abruf(`${basis}${pfad}`, init);
+      const token = optionen.token?.();
+      const mitToken = token ? { ...init, headers: { ...(init?.headers as Record<string, string> | undefined), authorization: `Bearer ${token}` } } : init;
+      antwort = await abruf(`${basis}${pfad}`, mitToken);
     } catch {
       throw new ApiFehler("NETZ", "", 0);
     }
@@ -236,9 +246,9 @@ export function erzeugeApi(abruf: Abruf, basis = "/api/admin") {
     liste(status: string | null, seite: number): Promise<Liste> {
       const q = new URLSearchParams({ seite: String(seite) });
       if (status) q.set("status", status);
-      return rufe<Liste>(`/anfragen?${q}`);
+      return rufe<Liste>(`${anfragenPfad}?${q}`);
     },
-    detail: (id: string): Promise<Detail> => rufe<Detail>(`/anfragen/${encodeURIComponent(id)}`),
+    detail: (id: string): Promise<Detail> => rufe<Detail>(`${anfragenPfad}/${encodeURIComponent(id)}`),
     deadLetterListe: async (alle = false): Promise<DeadLetterEintrag[]> => (await rufe<{ eintraege: DeadLetterEintrag[] }>(`/dead-letter${alle ? "?alle=1" : ""}`)).eintraege,
     erneutEinreihen: (id: number): Promise<DeadLetterEintrag> => rufe(`/dead-letter/${id}/erneut`, { method: "POST" }),
     kennzahlen(von?: string, bis?: string): Promise<Kennzahlen> {
@@ -250,7 +260,7 @@ export function erzeugeApi(abruf: Abruf, basis = "/api/admin") {
     },
     abweichungen: (): Promise<Abweichungen> => rufe("/anfragen/auswertung/ankaeufe"),
     aktion: (id: string, aktion: string, version: number, notiz?: string, ankaufspreisEuro?: number): Promise<{ version: number }> =>
-      rufe(`/anfragen/${encodeURIComponent(id)}/aktion`, {
+      rufe(`${anfragenPfad}/${encodeURIComponent(id)}/aktion`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ aktion, version, ...(notiz ? { notiz } : {}), ...(ankaufspreisEuro !== undefined ? { ankaufspreisEuro } : {}) }),
