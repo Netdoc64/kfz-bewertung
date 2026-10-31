@@ -7,3 +7,12 @@ dist/
 .env.*
 !.dev.vars.example
 coverage/
+
+# Android (Capacitor)
+apps/admin/android/.gradle/
+apps/admin/android/build/
+apps/admin/android/app/build/
+apps/admin/android/local.properties
+apps/admin/android/capacitor-cordova-android-plugins/
+apps/admin/android/app/src/main/assets/public/
+apps/admin/android/app/src/main/assets/capacitor*.json

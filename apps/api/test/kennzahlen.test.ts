@@ -22,8 +22,14 @@ async function bericht(anfrage: string, konfidenz: number, erstellt: string) {
 }
 
 beforeEach(async () => {
-  await env.DB.exec("DELETE FROM berichte; DELETE FROM anfrage_ereignisse; DELETE FROM anfragen; DELETE FROM einstellungen;");
+  await env.DB.exec("DELETE FROM ki_nutzung; DELETE FROM berichte; DELETE FROM anfrage_ereignisse; DELETE FROM anfragen; DELETE FROM einstellungen;");
   for (const id of ["a1", "a2", "a3", "a4", "a5"]) await env.DB.prepare("INSERT INTO anfragen (id, kanal, status, fahrzeug) VALUES (?1, 'admin', 'eingegangen', '{}')").bind(id).run();
+  const ki = (anfrage: string | null, f: string, ein: number, aus: number, kosten: number, am: string) =>
+    env.DB.prepare("INSERT INTO ki_nutzung (anfrage_id, faehigkeit, modell, token_ein, token_aus, kosten_euro, am) VALUES (?1, ?2, 'm', ?3, ?4, ?5, ?6)").bind(anfrage, f, ein, aus, kosten, am).run();
+  await ki("a1", "auslesen", 700, 130, 0.012, "2026-01-10T10:00:00.000Z");
+  await ki("a1", "formulieren", 500, 100, 0.01, "2026-01-10T11:00:00.000Z");
+  await ki("a2", "auslesen", 500, 100, 0.008, "2026-01-12T10:00:00.000Z");
+  await ki("a3", "auslesen", 9999, 9999, 9, "2025-12-31T23:59:59.000Z"); // vor dem Zeitraum
   const T = "2026-01-10T";
   // a1: bis zur Freigabe, dann freigegeben (offen)
   await ereignis("a1", "angelegt", null, "eingegangen", `${T}10:00:00.000Z`);
@@ -78,7 +84,24 @@ describe("Kennzahlen (A12)", () => {
       },
       fehlerrate: { bewertungen: 4, fehlgeschlagen: 1, rate: 0.25 },
       freigabedauer: { anzahl: 2, mittel: 360, median: 360, max: 600 },
+      ki: {
+        aufrufe: 3,
+        anfragen: 2,
+        tokenEin: 1700,
+        tokenAus: 330,
+        kostenEuro: 0.03,
+        kostenJeAnfrage: 0.015,
+        faehigkeiten: {
+          auslesen: { aufrufe: 2, tokenEin: 1200, tokenAus: 230, kostenEuro: 0.02 },
+          formulieren: { aufrufe: 1, tokenEin: 500, tokenAus: 100, kostenEuro: 0.01 },
+        },
+      },
     });
+  });
+
+  it("KI-Summen ohne Nutzung im Zeitraum sind 0 bzw. null", async () => {
+    const k = (await (await holen("?von=2025-01-01T00:00:00.000Z&bis=2025-02-01T00:00:00.000Z")).json()) as { ki: unknown };
+    expect(k.ki).toEqual({ aufrufe: 0, anfragen: 0, tokenEin: 0, tokenAus: 0, kostenEuro: 0, kostenJeAnfrage: null, faehigkeiten: {} });
   });
 
   it("nimmt Klassengrenzen aus den Einstellungen", async () => {
