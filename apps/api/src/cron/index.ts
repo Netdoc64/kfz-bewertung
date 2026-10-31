@@ -67,7 +67,7 @@ export async function fuehreCronAus(controller: ScheduledController, env: Bindin
     sammle(await laufe(env, "rueckfrageTimeout", schalter.rueckfrageTimeout, korrelationsId, abSchwere, () => rueckfrageTimeout(env.DB, einstellungen, korrelationsId, jetzt)));
     sammle(await laufe(env, "freigabeErinnerung", schalter.freigabeErinnerung, korrelationsId, abSchwere, () => freigabeErinnerung(env.DB, einstellungen, env.EMAIL, jetzt, pushFuer(env))));
     sammle(await laufe(env, "berichtsablauf", schalter.berichtsablauf, korrelationsId, abSchwere, () => berichtsablauf(env.DB, korrelationsId, jetzt)));
-    sammle(await laufe(env, "dsgvoLoeschung", schalter.dsgvoLoeschung, korrelationsId, abSchwere, () => dsgvoLoeschung(env.DB, einstellungen, jetzt)));
+    sammle(await laufe(env, "dsgvoLoeschung", schalter.dsgvoLoeschung, korrelationsId, abSchwere, () => dsgvoLoeschung(env.DB, einstellungen, jetzt, env.BERICHTE)));
     sammle(await laufe(env, "fehlerAufraeumen", schalter.fehlerAufraeumen, korrelationsId, abSchwere, () => fehlerAufraeumen(env.DB, einstellungen, jetzt)));
     sammle(await laufe(env, "referenzAbgleich", schalter.referenzAbgleich, korrelationsId, abSchwere, () => referenzAbgleich(einstellungen)));
 

@@ -80,6 +80,10 @@ export const FEHLER = {
   ALARM_FEHLGESCHLAGEN: { status: 502, schwere: "kritisch", wiederholbar: true, text: "Der Alarm konnte nicht zugestellt werden." },
   DEAD_LETTER: { status: 500, schwere: "kritisch", wiederholbar: false, text: "Ein Auftrag ist endgültig fehlgeschlagen und wartet auf einen Menschen." },
 
+  // DSGVO
+  DSGVO_OFFENE_ANFRAGE: { status: 409, schwere: "warnung", wiederholbar: false, text: "Zu dieser Person gibt es noch offene Anfragen; die Löschung ist laut Einstellung gesperrt." },
+  DSGVO_LOESCHUNG_FEHLGESCHLAGEN: { status: 500, schwere: "fehler", wiederholbar: true, text: "Die Personendaten konnten nicht vollständig gelöscht werden. Bitte erneut versuchen." },
+
   // Technik
   DATENBANK: { status: 500, schwere: "kritisch", wiederholbar: true, text: "Interner Speicherfehler." },
   INTERN: { status: 500, schwere: "kritisch", wiederholbar: false, text: "Interner Fehler." },

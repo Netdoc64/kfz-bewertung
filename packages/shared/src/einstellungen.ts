@@ -556,6 +556,13 @@ export const EINSTELLUNGEN = {
   ),
   "betrieb.fehlerAufbewahrungTage": def("betrieb", z.number().int().positive(), 90, "Fehlereinträge werden nach dieser Zeit gelöscht."),
   "betrieb.personendatenAufbewahrungTage": def("betrieb", z.number().int().positive(), 365, "Kundendaten abgeschlossener Anfragen werden danach gelöscht (DSGVO)."),
+  "betrieb.dsgvoEinzelloeschungOffeneAnfragen": def(
+    "betrieb",
+    z.enum(["erlauben", "sperren"]),
+    "erlauben",
+    "Sofortige Löschung einer Person (Admin): „sperren“ verweigert sie, solange eine Anfrage der Person noch nicht abgeschlossen ist.",
+  ),
+  "betrieb.dsgvoAuskunftMaxAnfragen": def("betrieb", z.number().int().min(1), 200, "Höchstzahl Anfragen und geparkter Eingänge je Auskunft oder Einzellöschung; darüber wird abgeschnitten gemeldet.", { max: 1000 }),
 
   // Eingang
   "eingang.maxJeAbsenderUndTag": def(
