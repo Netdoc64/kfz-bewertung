@@ -4,8 +4,8 @@ import { geraetePflicht, koppeln, type GeraeteUmgebung } from "../geraete/index.
 import { aktionHandler, detailHandler, listeHandler, type HandlerKontext } from "./anfragen.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 
-const PushTokenSchema = z.object({ token: z.string().trim().min(1).max(4096) });
-const KoppelnSchema = z.object({ code: z.string().min(1).max(64), name: z.string().trim().min(1).max(80) });
+export const PushTokenSchema = z.object({ token: z.string().trim().min(1).max(4096) });
+export const KoppelnSchema = z.object({ code: z.string().min(1).max(64), name: z.string().trim().min(1).max(80) });
 
 /**
  * App-API. `/koppeln` ist öffentlich (der Code ist der Nachweis); alles, was danach

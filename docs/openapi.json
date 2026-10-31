@@ -1,0 +1,1673 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "kfz-bewertung API",
+    "version": "1.0.0",
+    "description": "Erzeugt aus den zod-Schemas der Routen (npm run openapi). Nicht von Hand ändern."
+  },
+  "paths": {
+    "/api/gesundheit": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Gesundheitsprüfung inklusive Datenbank",
+        "description": "Ohne Anmeldung.",
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/anfragen": {
+      "post": {
+        "tags": [
+          "Formular"
+        ],
+        "summary": "Anfrage aus dem Webformular anlegen",
+        "description": "Ohne Anmeldung.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "kontakt": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 200
+                  },
+                  "sprache": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 10
+                  },
+                  "fahrzeug": {
+                    "type": "object",
+                    "properties": {
+                      "marke": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "modell": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "variante": {
+                        "type": "string"
+                      },
+                      "fin": {
+                        "type": "string",
+                        "pattern": "^[A-HJ-NPR-Z0-9]{17}$"
+                      },
+                      "hsn": {
+                        "type": "string",
+                        "pattern": "^\\d{4}$"
+                      },
+                      "tsn": {
+                        "type": "string",
+                        "pattern": "^[A-Z0-9]{3}$"
+                      },
+                      "erstzulassung": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                      },
+                      "kilometer": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "leistungKw": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "kraftstoff": {
+                        "type": "string",
+                        "enum": [
+                          "benzin",
+                          "diesel",
+                          "elektro",
+                          "hybrid",
+                          "plugin_hybrid",
+                          "lpg",
+                          "cng",
+                          "wasserstoff",
+                          "sonstige"
+                        ]
+                      },
+                      "getriebe": {
+                        "type": "string",
+                        "enum": [
+                          "manuell",
+                          "automatik",
+                          "halbautomatik"
+                        ]
+                      },
+                      "zustand": {
+                        "type": "string",
+                        "enum": [
+                          "unfallfrei",
+                          "repariert",
+                          "beschaedigt",
+                          "nicht_fahrbereit"
+                        ]
+                      },
+                      "vorbesitzer": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "scheckheft": {
+                        "type": "boolean"
+                      },
+                      "huRestMonate": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "akkuSohProzent": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "ausstattung": {
+                        "default": [],
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "farbe": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "marke",
+                      "modell"
+                    ]
+                  },
+                  "kennzeichen": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 15
+                  },
+                  "nachricht": {
+                    "type": "string",
+                    "maxLength": 5000
+                  }
+                },
+                "required": [
+                  "name",
+                  "kontakt",
+                  "fahrzeug"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/einstellungen": {
+      "get": {
+        "tags": [
+          "Einstellungen"
+        ],
+        "summary": "Alle Einstellungen mit Wert und Version",
+        "description": "Nur Admin (Cloudflare Access).",
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/einstellungen/{schluessel}": {
+      "get": {
+        "tags": [
+          "Einstellungen"
+        ],
+        "summary": "Eine Einstellung lesen",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "schluessel",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Einstellungen"
+        ],
+        "summary": "Einstellung setzen (null = Standardwert)",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "schluessel",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wert": {},
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "wert",
+                  "version"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/einstellungen/{schluessel}/verlauf": {
+      "get": {
+        "tags": [
+          "Einstellungen"
+        ],
+        "summary": "Änderungsverlauf einer Einstellung",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "schluessel",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/einstellungen/{schluessel}/vorschau": {
+      "post": {
+        "tags": [
+          "Einstellungen"
+        ],
+        "summary": "Wirkung eines Wertes auf die letzten Berichte rechnen",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "schluessel",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wert": {}
+                },
+                "required": [
+                  "wert"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/fehler": {
+      "get": {
+        "tags": [
+          "Fehler"
+        ],
+        "summary": "Fehlerspeicher auflisten",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "offen",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "ja",
+              "type": "string",
+              "enum": [
+                "ja",
+                "nein",
+                "alle"
+              ]
+            }
+          },
+          {
+            "name": "abSchwere",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "info",
+              "type": "string",
+              "enum": [
+                "info",
+                "warnung",
+                "fehler",
+                "kritisch"
+              ]
+            }
+          },
+          {
+            "name": "grenze",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/fehler/{id}/quittieren": {
+      "post": {
+        "tags": [
+          "Fehler"
+        ],
+        "summary": "Fehler quittieren",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/anfragen": {
+      "get": {
+        "tags": [
+          "Anfragen"
+        ],
+        "summary": "Anfragen auflisten",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "eingegangen",
+                "unvollstaendig",
+                "in_bewertung",
+                "zur_freigabe",
+                "nachbearbeiten",
+                "freigegeben",
+                "angebot_versendet",
+                "verhandlung",
+                "besichtigung",
+                "angekauft",
+                "abgesagt",
+                "abgelehnt",
+                "an_mensch",
+                "fehlgeschlagen"
+              ]
+            }
+          },
+          {
+            "name": "seite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Anfragen"
+        ],
+        "summary": "Anfrage manuell anlegen",
+        "description": "Nur Admin (Cloudflare Access).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "kontakt": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 200
+                  },
+                  "sprache": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 10
+                  },
+                  "fahrzeug": {
+                    "type": "object",
+                    "properties": {
+                      "marke": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "modell": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "variante": {
+                        "type": "string"
+                      },
+                      "fin": {
+                        "type": "string",
+                        "pattern": "^[A-HJ-NPR-Z0-9]{17}$"
+                      },
+                      "hsn": {
+                        "type": "string",
+                        "pattern": "^\\d{4}$"
+                      },
+                      "tsn": {
+                        "type": "string",
+                        "pattern": "^[A-Z0-9]{3}$"
+                      },
+                      "erstzulassung": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                      },
+                      "kilometer": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "leistungKw": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "kraftstoff": {
+                        "type": "string",
+                        "enum": [
+                          "benzin",
+                          "diesel",
+                          "elektro",
+                          "hybrid",
+                          "plugin_hybrid",
+                          "lpg",
+                          "cng",
+                          "wasserstoff",
+                          "sonstige"
+                        ]
+                      },
+                      "getriebe": {
+                        "type": "string",
+                        "enum": [
+                          "manuell",
+                          "automatik",
+                          "halbautomatik"
+                        ]
+                      },
+                      "zustand": {
+                        "type": "string",
+                        "enum": [
+                          "unfallfrei",
+                          "repariert",
+                          "beschaedigt",
+                          "nicht_fahrbereit"
+                        ]
+                      },
+                      "vorbesitzer": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "scheckheft": {
+                        "type": "boolean"
+                      },
+                      "huRestMonate": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "akkuSohProzent": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "ausstattung": {
+                        "default": [],
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "farbe": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "marke",
+                      "modell"
+                    ]
+                  },
+                  "kennzeichen": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 15
+                  },
+                  "nachricht": {
+                    "type": "string",
+                    "maxLength": 5000
+                  }
+                },
+                "required": [
+                  "name",
+                  "kontakt",
+                  "fahrzeug"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/anfragen/auswertung/ankaeufe": {
+      "get": {
+        "tags": [
+          "Anfragen"
+        ],
+        "summary": "Abweichung Schätzung gegen Ankaufspreis",
+        "description": "Nur Admin (Cloudflare Access).",
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/anfragen/{id}": {
+      "get": {
+        "tags": [
+          "Anfragen"
+        ],
+        "summary": "Anfrage mit Bericht und Verlauf",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/anfragen/{id}/aktion": {
+      "post": {
+        "tags": [
+          "Anfragen"
+        ],
+        "summary": "Aktion auf eine Anfrage (Freigabe, Absage, Abschluss …)",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "aktion": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "version": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "notiz": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "aktion",
+                  "version"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/anfragen/{id}/nachrichten": {
+      "post": {
+        "tags": [
+          "Anfragen"
+        ],
+        "summary": "Nachricht des Kunden an eine Anfrage hängen",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000
+                  },
+                  "fahrzeug": {
+                    "type": "object",
+                    "properties": {
+                      "marke": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "modell": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "variante": {
+                        "type": "string"
+                      },
+                      "fin": {
+                        "type": "string",
+                        "pattern": "^[A-HJ-NPR-Z0-9]{17}$"
+                      },
+                      "hsn": {
+                        "type": "string",
+                        "pattern": "^\\d{4}$"
+                      },
+                      "tsn": {
+                        "type": "string",
+                        "pattern": "^[A-Z0-9]{3}$"
+                      },
+                      "erstzulassung": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                      },
+                      "kilometer": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "leistungKw": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "kraftstoff": {
+                        "type": "string",
+                        "enum": [
+                          "benzin",
+                          "diesel",
+                          "elektro",
+                          "hybrid",
+                          "plugin_hybrid",
+                          "lpg",
+                          "cng",
+                          "wasserstoff",
+                          "sonstige"
+                        ]
+                      },
+                      "getriebe": {
+                        "type": "string",
+                        "enum": [
+                          "manuell",
+                          "automatik",
+                          "halbautomatik"
+                        ]
+                      },
+                      "zustand": {
+                        "type": "string",
+                        "enum": [
+                          "unfallfrei",
+                          "repariert",
+                          "beschaedigt",
+                          "nicht_fahrbereit"
+                        ]
+                      },
+                      "vorbesitzer": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "scheckheft": {
+                        "type": "boolean"
+                      },
+                      "huRestMonate": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "akkuSohProzent": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "ausstattung": {
+                        "default": [],
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "farbe": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/geparkt": {
+      "get": {
+        "tags": [
+          "Geparkt"
+        ],
+        "summary": "Geparkte Eingänge auflisten",
+        "description": "Nur Admin (Cloudflare Access).",
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/geparkt/{id}": {
+      "get": {
+        "tags": [
+          "Geparkt"
+        ],
+        "summary": "Geparkten Eingang lesen",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/geparkt/{id}/anhaenge/{anhangId}": {
+      "get": {
+        "tags": [
+          "Geparkt"
+        ],
+        "summary": "Anhang eines geparkten Eingangs laden",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "anhangId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/geparkt/{id}/pruefen": {
+      "post": {
+        "tags": [
+          "Geparkt"
+        ],
+        "summary": "Eingang als in Prüfung markieren",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/geparkt/{id}/freigeben": {
+      "post": {
+        "tags": [
+          "Geparkt"
+        ],
+        "summary": "Eingang freigeben und Anfrage anlegen",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "fahrzeug": {
+                    "type": "object",
+                    "properties": {
+                      "marke": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "modell": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "variante": {
+                        "type": "string"
+                      },
+                      "fin": {
+                        "type": "string",
+                        "pattern": "^[A-HJ-NPR-Z0-9]{17}$"
+                      },
+                      "hsn": {
+                        "type": "string",
+                        "pattern": "^\\d{4}$"
+                      },
+                      "tsn": {
+                        "type": "string",
+                        "pattern": "^[A-Z0-9]{3}$"
+                      },
+                      "erstzulassung": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                      },
+                      "kilometer": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "leistungKw": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "kraftstoff": {
+                        "type": "string",
+                        "enum": [
+                          "benzin",
+                          "diesel",
+                          "elektro",
+                          "hybrid",
+                          "plugin_hybrid",
+                          "lpg",
+                          "cng",
+                          "wasserstoff",
+                          "sonstige"
+                        ]
+                      },
+                      "getriebe": {
+                        "type": "string",
+                        "enum": [
+                          "manuell",
+                          "automatik",
+                          "halbautomatik"
+                        ]
+                      },
+                      "zustand": {
+                        "type": "string",
+                        "enum": [
+                          "unfallfrei",
+                          "repariert",
+                          "beschaedigt",
+                          "nicht_fahrbereit"
+                        ]
+                      },
+                      "vorbesitzer": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "scheckheft": {
+                        "type": "boolean"
+                      },
+                      "huRestMonate": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "akkuSohProzent": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "ausstattung": {
+                        "default": [],
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "farbe": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "marke",
+                      "modell"
+                    ]
+                  },
+                  "kennzeichen": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 15
+                  }
+                },
+                "required": [
+                  "fahrzeug"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/geparkt/{id}/verwerfen": {
+      "post": {
+        "tags": [
+          "Geparkt"
+        ],
+        "summary": "Eingang verwerfen",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/dead-letter": {
+      "get": {
+        "tags": [
+          "Dead Letter"
+        ],
+        "summary": "Gescheiterte Jobs auflisten",
+        "description": "Nur Admin (Cloudflare Access).",
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/dead-letter/{id}": {
+      "get": {
+        "tags": [
+          "Dead Letter"
+        ],
+        "summary": "Gescheiterten Job lesen",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/dead-letter/{id}/erneut": {
+      "post": {
+        "tags": [
+          "Dead Letter"
+        ],
+        "summary": "Gescheiterten Job erneut einreihen",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/dsgvo/auskunft": {
+      "post": {
+        "tags": [
+          "DSGVO"
+        ],
+        "summary": "Auskunft zu einer Person (Art. 15)",
+        "description": "Nur Admin (Cloudflare Access).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kontakt": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 320
+                  }
+                },
+                "required": [
+                  "kontakt"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/dsgvo/loeschung": {
+      "post": {
+        "tags": [
+          "DSGVO"
+        ],
+        "summary": "Personendaten löschen (Art. 17)",
+        "description": "Nur Admin (Cloudflare Access).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kontakt": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 320
+                  },
+                  "bestaetigung": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 320
+                  }
+                },
+                "required": [
+                  "kontakt",
+                  "bestaetigung"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/kennzahlen": {
+      "get": {
+        "tags": [
+          "Kennzahlen"
+        ],
+        "summary": "Kennzahlen für einen Zeitraum",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "von",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          {
+            "name": "bis",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/geraete": {
+      "get": {
+        "tags": [
+          "Geräte"
+        ],
+        "summary": "Gekoppelte Geräte auflisten",
+        "description": "Nur Admin (Cloudflare Access).",
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/geraete/kopplungscode": {
+      "post": {
+        "tags": [
+          "Geräte"
+        ],
+        "summary": "Kopplungscode erzeugen",
+        "description": "Nur Admin (Cloudflare Access).",
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/admin/geraete/{id}/widerrufen": {
+      "post": {
+        "tags": [
+          "Geräte"
+        ],
+        "summary": "Gerät widerrufen",
+        "description": "Nur Admin (Cloudflare Access).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/app/koppeln": {
+      "post": {
+        "tags": [
+          "App"
+        ],
+        "summary": "Gerät mit Kopplungscode koppeln",
+        "description": "Ohne Anmeldung.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "code",
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/app/push-token": {
+      "post": {
+        "tags": [
+          "App"
+        ],
+        "summary": "Push-Token des Geräts speichern",
+        "description": "Nur gekoppeltes Gerät (Geräte-Token).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/app/beschriftungen": {
+      "get": {
+        "tags": [
+          "App"
+        ],
+        "summary": "Beschriftungen für die App",
+        "description": "Nur gekoppeltes Gerät (Geräte-Token).",
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/app": {
+      "get": {
+        "tags": [
+          "App"
+        ],
+        "summary": "Anfragen auflisten",
+        "description": "Nur gekoppeltes Gerät (Geräte-Token).",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "eingegangen",
+                "unvollstaendig",
+                "in_bewertung",
+                "zur_freigabe",
+                "nachbearbeiten",
+                "freigegeben",
+                "angebot_versendet",
+                "verhandlung",
+                "besichtigung",
+                "angekauft",
+                "abgesagt",
+                "abgelehnt",
+                "an_mensch",
+                "fehlgeschlagen"
+              ]
+            }
+          },
+          {
+            "name": "seite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/app/{id}": {
+      "get": {
+        "tags": [
+          "App"
+        ],
+        "summary": "Anfrage lesen",
+        "description": "Nur gekoppeltes Gerät (Geräte-Token).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/api/app/{id}/aktion": {
+      "post": {
+        "tags": [
+          "App"
+        ],
+        "summary": "Aktion auf eine Anfrage",
+        "description": "Nur gekoppeltes Gerät (Geräte-Token).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "aktion": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "version": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "notiz": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "aktion",
+                  "version"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    }
+  }
+}

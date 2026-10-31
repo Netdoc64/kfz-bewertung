@@ -5,8 +5,8 @@ import { findePerson, loeschePersonendaten, sammleAuskunft } from "../dsgvo/inde
 import type { AppUmgebung } from "../env.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 
-const KontaktSchema = z.object({ kontakt: z.string().trim().min(3).max(320) });
-const LoeschSchema = KontaktSchema.extend({ bestaetigung: z.string().trim().min(3).max(320) });
+export const KontaktSchema = z.object({ kontakt: z.string().trim().min(3).max(320) });
+export const LoeschSchema = KontaktSchema.extend({ bestaetigung: z.string().trim().min(3).max(320) });
 
 function lies<T extends z.ZodType>(schema: T, daten: unknown): z.infer<T> {
   const p = schema.safeParse(daten);

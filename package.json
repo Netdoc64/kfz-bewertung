@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "typecheck": "tsc -b",
+    "openapi": "npm run openapi -w @kfz/api",
     "test": "npm run test --workspaces --if-present",
     "dev:api": "npm run dev -w @kfz/api"
   },

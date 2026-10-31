@@ -46,7 +46,7 @@ async function anhaenge(db: D1Database, geparktId: string): Promise<AnhangZeile[
 }
 
 /** Freigabe eines Mail-Eingangs: Fahrzeugangaben (und ggf. Name/Kennzeichen) kommen vom Admin, der Rest aus der Mail. */
-const MailFreigabeSchema = AnlegenSchema.pick({ name: true, fahrzeug: true, kennzeichen: true }).partial({ name: true });
+export const MailFreigabeSchema = AnlegenSchema.pick({ name: true, fahrzeug: true, kennzeichen: true }).partial({ name: true });
 
 /** Gründe, bei denen die Nutzlast eine Mail ohne Fahrzeugangaben ist; der Admin ergänzt sie beim Freigeben. */
 const MAIL_GRUENDE = new Set(["mail_unklar", "ki_sonstiges", "ki_rueckfrage_unzuordenbar"]);
