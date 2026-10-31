@@ -236,9 +236,37 @@ Kundin oder eines Kunden.
 
 ## 7. Weiterführend
 
-Rate-Limits, Lasttest-Rahmen, OpenAPI und Sicherheits-Review gehören zu Phase 8 und werden
-hier verlinkt, sobald sie gemergt sind:
+### Rate-Limits
 
-- Rate-Limits: _folgt_
-- Lasttest: _folgt_
-- Sicherheits-Befunde (`docs/SICHERHEIT.md`): _folgt_
+Code: [apps/api/src/ratelimit/index.ts](../apps/api/src/ratelimit/index.ts), Zähler in der D1-Tabelle
+`ratenzaehler` ([Migration 0013](../apps/api/migrations/0013_ratenbegrenzung.sql)), Tests in
+[rate-limit.test.ts](../apps/api/test/rate-limit.test.ts). Feste Fenster je Absender und Kanal; der
+Absender (`CF-Connecting-IP`, bei Mails die Absenderadresse) liegt nur als Hash vor. Die Grenzen sind
+Einstellungen und ohne Deploy änderbar:
+
+| Kanal | Wo | Schlüssel | Standard | Bei Überschreitung |
+|---|---|---|---|---|
+| `formular` | `/api/anfragen` | `ratenlimit.formular.max` / `.fensterSekunden` | 10 je 3600 s | 429 `RATE_LIMIT_UEBERSCHRITTEN`, Header `Retry-After` |
+| `email` | E-Mail-Eingang | `ratenlimit.email.max` / `.fensterSekunden` | 20 je 3600 s | Mail wird verworfen, ohne zu antworten |
+| `app` | `/api/app/*` | `ratenlimit.app.max` / `.fensterSekunden` | 120 je 60 s | 429 `RATE_LIMIT_UEBERSCHRITTEN`, Header `Retry-After` |
+
+Fehlt die Client-IP (lokaler Aufruf, Tests), wird nicht gezählt. Alte Fenster eines Kanals räumt der
+nächste Aufruf desselben Kanals. Legitime Kundschaft hinter einer gemeinsamen IP (Firmennetz) trifft das
+Formular-Limit früher: `ratenlimit.formular.max` per Einstellung anheben.
+
+### Lasttest
+
+[lasttest-bewertungs-job.test.ts](../apps/api/test/lasttest-bewertungs-job.test.ts) läuft mit `npm test`:
+500 Anfragen über die Mock-Quelle, doppelt zugestellte Queue-Nachrichten und parallele Batches; jede Anfrage
+wird genau einmal bewertet. Laufzeitrahmen 120 s (fängt quadratisches Verhalten oder hängende
+Wiederholungen, keine Millisekunden). Er prüft die Verarbeitung, nicht den Durchsatz am echten Netz oder
+gegen echte Portale.
+
+### OpenAPI
+
+`npm run openapi` erzeugt [docs/openapi.json](openapi.json) aus den zod-Schemas; ein Test prüft Aktualität
+und Vollständigkeit.
+
+### Sicherheits-Befunde
+
+_folgt_ — `docs/SICHERHEIT.md` ist noch nicht gemergt; der Link kommt mit dem Thema `sicherheits-review`.
