@@ -100,5 +100,5 @@ export async function koppeln(abruf: Abruf, eingabe: { adresse: string; code: st
 
 /** API auf `<adresse>/api/app` mit dem Geräte-Token; Liste und Detail liegen dort an der Wurzel. */
 export function erzeugeAppApi(abruf: Abruf, k: Kopplung): Api {
-  return erzeugeApi(abruf, `${k.adresse}/api/app`, { token: () => k.token, anfragen: "" });
+  return erzeugeApi(abruf, `${k.adresse}/api/app`, { token: () => k.token, anfragen: "", gemeinsameBeschriftungen: true });
 }

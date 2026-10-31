@@ -224,6 +224,8 @@ export interface ApiOptionen {
   token?: () => string | null;
   /** Pfad der Anfragen unter der Basis: im Admin `/anfragen`, in der App-API die Wurzel. */
   anfragen?: string;
+  /** App-API: Beschriftungen und Statusnamen kommen gemeinsam aus `GET /beschriftungen`. */
+  gemeinsameBeschriftungen?: boolean;
 }
 
 export function erzeugeApi(abruf: Abruf, basis = "/api/admin", optionen: ApiOptionen = {}) {
@@ -245,9 +247,24 @@ export function erzeugeApi(abruf: Abruf, basis = "/api/admin", optionen: ApiOpti
     return koerper as T;
   }
 
+  let gemeinsam: Promise<{ beschriftungen: Beschriftungen; statusBeschriftungen: Record<string, string> }> | null = null;
+  const ladeGemeinsam = () => {
+    gemeinsam ??= rufe<{ beschriftungen: Beschriftungen; statusBeschriftungen: Record<string, string> }>("/beschriftungen");
+    gemeinsam.catch(() => {
+      gemeinsam = null;
+    });
+    return gemeinsam;
+  };
+
   return {
-    beschriftungen: async (): Promise<Beschriftungen> => (await rufe<{ wert: Beschriftungen }>("/einstellungen/oberflaeche.beschriftungen")).wert,
-    statusNamen: async (): Promise<Record<string, string>> => (await rufe<{ wert: Record<string, string> }>("/einstellungen/ablauf.statusBeschriftungen")).wert,
+    beschriftungen: async (): Promise<Beschriftungen> =>
+      optionen.gemeinsameBeschriftungen
+        ? (await ladeGemeinsam()).beschriftungen
+        : (await rufe<{ wert: Beschriftungen }>("/einstellungen/oberflaeche.beschriftungen")).wert,
+    statusNamen: async (): Promise<Record<string, string>> =>
+      optionen.gemeinsameBeschriftungen
+        ? (await ladeGemeinsam()).statusBeschriftungen
+        : (await rufe<{ wert: Record<string, string> }>("/einstellungen/ablauf.statusBeschriftungen")).wert,
     einstellungen: (): Promise<{ abdruck: string; eintraege: EinstellungsEintrag[] }> => rufe("/einstellungen"),
     setzeEinstellung: (schluessel: string, wert: unknown, version: number): Promise<EinstellungsEintrag> =>
       rufe(`/einstellungen/${encodeURIComponent(schluessel)}`, {
