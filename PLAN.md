@@ -185,20 +185,32 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 
 ### Phase 6 — KI-Anschluss
 
-- [ ] Claude-Adapter für den `KiAnschluss`-Port, je Fähigkeit schaltbar
+- [ ] Claude-Adapter für den `KiAnschluss`-Port mit dem offiziellen `@anthropic-ai/sdk`; Modell, Aufwand und Fähigkeiten aus der Registry (`ki.*`), je Fähigkeit schaltbar
+- [ ] Freitext auslesen und Fahrzeugschein-Foto auslesen mit strukturierter Ausgabe (zod), Sicherheit je Feld; unter der Schwelle aus der Registry wird nachgefragt statt übernommen
+- [ ] Anfrage einordnen (Bewertung, Rückfrage-Antwort, sonstiges, Spam) im E-Mail-Eingang; „sonstiges“ → `an_mensch`
+- [ ] Berichtstext formulieren: alle Zahlen kommen aus dem Bewertungskern; ein Test belegt, dass keine Zahl aus der KI-Antwort in Preis oder Bericht übernommen wird
 - [ ] Jede Fähigkeit hat einen Test „KI aus → gleicher Ablauf ohne KI“
-- [ ] Tagesbudget greift; Kosten je Anfrage erfasst
+- [ ] Tagesbudget greift (`ki.tagesbudgetEuro`); Token und Kosten je Anfrage gespeichert und in den Kennzahlen sichtbar
+- [ ] Ablehnung (`refusal`), Zeitüberschreitung und API-Fehler enden mit Fehlercode aus dem Katalog und dem Weg ohne KI
+- [ ] Prompt-Injection-Test: Kundentext mit Anweisungen ändert weder Preis noch Status noch Empfänger
+- [ ] Alle KI-Aufrufe laufen in Tests gegen eine Attrappe; kein echter Schlüssel nötig, Schlüsselname in `.dev.vars.example`
 
 ### Phase 7 — Smartphone-App
 
-- [ ] App gegen dieselbe API mit Geräte-Tokens
-- [ ] Freigabe und Abwicklung mobil
+- [ ] Geräte-Kopplung: Admin erzeugt einen Kopplungscode, das Gerät tauscht ihn gegen ein Geräte-Token; Token nur gehasht in D1, widerrufbar, Laufzeit aus der Registry
+- [ ] App-API unter `/api/app/*` mit Geräte-Token: Liste, Detail, Freigabe-Aktionen, Ankaufspreis erfassen — dieselben Regeln und Fehlercodes wie der Admin-Bereich
+- [ ] Android-App mit Capacitor aus `apps/admin` (App-Modus); API-Adresse aus der Kopplung, nicht im Code
+- [ ] Push bei neuer Freigabe über einen Push-Port (Attrappe in Tests, Schlüsselnamen in `.dev.vars.example`)
+- [ ] `npm run apk -w @kfz/admin` baut eine Debug-APK; der Befehl steht im README
+- [ ] Ende-zu-Ende-Test: Gerät koppeln → Freigabe über die App-API → Status `freigegeben`; widerrufenes Token wird abgewiesen
 
 ## Braucht einen Menschen
 
 | Was | Für | Blockiert |
 |---|---|---|
 | mobile.de-Search-API beantragen | Live-Daten | Phase 5 |
-| GitHub-Repo anlegen | CI, PR-Überwachung | nichts, aber vor dem ersten PR |
+| Manager-Endpunkt `/kfz/versand` im WhatsApp-Manager bauen | WhatsApp-Versand | Phase 4 |
+| codemap-App-Dienst starten (Schlüssel vom Business Manager) | Automatischer Merge nach `main` | Sammel-PRs mergen von Hand |
+| Anthropic-Schlüssel über den Business Manager | Echte KI-Aufrufe | Betrieb von Phase 6, nicht die Entwicklung |
 | Cloudflare-Konto verbinden (`/mcp`), D1/Queues anlegen | Erster echter Deploy | Deploy, nicht die Entwicklung |
 | Geheimnisse über den Business Manager | mobile.de, Webhook-Schlüssel, Mail | Phase 3–5 |
