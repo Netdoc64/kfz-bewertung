@@ -269,4 +269,10 @@ und Vollständigkeit.
 
 ### Sicherheits-Befunde
 
-_folgt_ — `docs/SICHERHEIT.md` ist noch nicht gemergt; der Link kommt mit dem Thema `sicherheits-review`.
+Der Review nach OWASP API Security Top 10 steht in [SICHERHEIT.md](SICHERHEIT.md): 18 Befunde je Route, Queue und
+Cron mit Stand (behoben, akzeptiert, in Ordnung) und Test; keine hohen oder mittleren Befunde offen. Behoben wurden
+Body-Limit, Sicherheits-Header, fester JWT-Algorithmus und die Auslieferung von Mail-Anhängen.
+
+Für den Betrieb neu: Registry-Schlüssel `sicherheit.bodyMaxBytes` (Standard 256 KiB) begrenzt JSON-Bodys; wird er
+überschritten, antwortet die API mit `ANFRAGE_ZU_GROSS` (413, Schwere `info`, nicht wiederholbar) — das ist kein
+Fehler im Betrieb, sondern eine abgewiesene Anfrage. Bei legitim größeren Bodys den Schlüssel anheben (bis 5 MiB).
