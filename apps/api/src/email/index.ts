@@ -1,6 +1,9 @@
 import type { Bindings } from "../env.js";
 import { Einstellungen } from "../einstellungen/dienst.js";
 import type { KiAbhaengigkeiten } from "../ki/index.js";
+import { AppFehler } from "../fehler/app-fehler.js";
+import { fehlerSpeichern } from "../fehler/speicher.js";
+import { pruefeRatenlimit } from "../ratelimit/index.js";
 import { mitFehlerspeicher } from "../fehler/handler.js";
 import { verarbeiteEingang } from "./eingang.js";
 import { pruefeSchleifenschutz } from "./schleifenschutz.js";
@@ -24,6 +27,14 @@ export async function verarbeiteEmail(nachricht: ForwardableEmailMessage, env: B
       const urteil = pruefeSchleifenschutz({ kopfzeilen: nachricht.headers, umschlagAbsender: nachricht.from, eigeneAdressen: eigene });
       if (urteil.verwerfen) {
         console.warn("EMAIL_VERWORFEN", { grund: urteil.grund, detail: urteil.detail, korrelationsId });
+        return;
+      }
+      // Ratenbegrenzung je Absender: bei Überschreitung wird verworfen und protokolliert, nie geantwortet.
+      try {
+        await pruefeRatenlimit(env.DB, einst, "email", nachricht.from);
+      } catch (e) {
+        if (!(e instanceof AppFehler) || e.code !== "RATE_LIMIT_UEBERSCHRITTEN") throw e;
+        await fehlerSpeichern(env.DB, { fehler: e, ort: "email:ratenlimit", korrelationsId }, "info", env.EMAIL);
         return;
       }
       await verarbeiteEingang(nachricht, env, einst, korrelationsId, ki);

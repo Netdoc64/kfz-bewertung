@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { adminPflicht } from "./auth/access.js";
 import type { AppUmgebung } from "./env.js";
 import { fehlerBehandlung, grundlage, nichtGefunden } from "./fehler/middleware.js";
+import { ratenlimit } from "./ratelimit/index.js";
 import { verarbeiteEmail } from "./email/index.js";
 import { fuehreCronAus } from "./cron/index.js";
 import { verarbeiteQueue } from "./queue/index.js";
@@ -23,6 +24,7 @@ export const app = new Hono<AppUmgebung>()
     await c.env.DB.prepare("SELECT 1").first();
     return c.json({ ok: true, umgebung: c.env.UMGEBUNG });
   })
+  .use("/api/anfragen", ratenlimit("formular"))
   .route("/api/anfragen", formularRouten)
   .use("/api/admin/*", adminPflicht)
   .route("/api/admin/einstellungen", einstellungenRouten)
@@ -33,6 +35,7 @@ export const app = new Hono<AppUmgebung>()
   .route("/api/admin/dsgvo", dsgvoRouten)
   .route("/api/admin/kennzahlen", kennzahlenRouten)
   .route("/api/admin/geraete", geraeteRouten)
+  .use("/api/app/*", ratenlimit("app"))
   .route("/api/app", appRouten);
 
 app.onError(fehlerBehandlung);

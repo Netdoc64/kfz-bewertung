@@ -82,7 +82,7 @@ beforeEach(async () => {
   gesendet.length = 0;
   queue = [];
   await env.DB.exec(
-    "DELETE FROM email_anhaenge; DELETE FROM email_eingang; DELETE FROM eingang_geparkt; DELETE FROM nachrichten; DELETE FROM anfrage_nachrichten; DELETE FROM anfrage_ereignisse; DELETE FROM berichte; DELETE FROM anfragen; DELETE FROM einstellungen;",
+    "DELETE FROM ratenzaehler; DELETE FROM email_anhaenge; DELETE FROM email_eingang; DELETE FROM eingang_geparkt; DELETE FROM nachrichten; DELETE FROM anfrage_nachrichten; DELETE FROM anfrage_ereignisse; DELETE FROM berichte; DELETE FROM anfragen; DELETE FROM einstellungen;",
   );
   await setze("mail.absenderAdresse", "ankauf@kfz.example");
 });
