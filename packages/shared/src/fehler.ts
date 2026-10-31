@@ -69,6 +69,7 @@ export const FEHLER = {
   VERSAND_FEHLGESCHLAGEN: { status: 502, schwere: "fehler", wiederholbar: true, text: "Die Nachricht konnte nicht versendet werden." },
   VERSAND_VORLAGE_FEHLT: { status: 500, schwere: "fehler", wiederholbar: false, text: "Für diese Nachricht fehlt eine Vorlage oder ein Wert für einen Platzhalter." },
   RATE_LIMIT_UEBERSCHRITTEN: { status: 429, schwere: "info", wiederholbar: true, text: "Zu viele Anfragen in kurzer Zeit. Bitte etwas warten und erneut versuchen." },
+  ANFRAGE_ZU_GROSS: { status: 413, schwere: "info", wiederholbar: false, text: "Die Anfrage ist zu groß." },
   ZU_VIELE_ANFRAGEN: { status: 429, schwere: "warnung", wiederholbar: false, text: "Zu viele Anfragen von diesem Absender. Bitte später erneut versuchen." },
   PLAUSIBILITAET_VERLETZT: { status: 422, schwere: "warnung", wiederholbar: false, text: "Das Ergebnis liegt außerhalb der zulässigen Grenzen und wird von einem Menschen geprüft." },
   JOB_VERALTET: { status: 409, schwere: "info", wiederholbar: false, text: "Die Anfrage hat sich geändert; die Bewertung wird neu gestartet." },

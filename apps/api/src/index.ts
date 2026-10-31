@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { adminPflicht } from "./auth/access.js";
 import type { AppUmgebung } from "./env.js";
 import { fehlerBehandlung, grundlage, nichtGefunden } from "./fehler/middleware.js";
+import { bodyBegrenzung, sicherheitsKopfzeilen } from "./sicherheit/index.js";
 import { ratenlimit } from "./ratelimit/index.js";
 import { verarbeiteEmail } from "./email/index.js";
 import { fuehreCronAus } from "./cron/index.js";
@@ -19,6 +20,8 @@ import { appRouten } from "./routen/app.js";
 
 export const app = new Hono<AppUmgebung>()
   .use("*", grundlage)
+  .use("*", sicherheitsKopfzeilen)
+  .use("/api/*", bodyBegrenzung)
   .get("/api/gesundheit", async (c) => {
     // Prüft auch die Datenbank — ein grüner Haken ohne DB wäre gelogen.
     await c.env.DB.prepare("SELECT 1").first();
