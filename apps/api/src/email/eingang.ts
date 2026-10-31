@@ -1,4 +1,4 @@
-import { FahrzeugSchema, type Einordnung, type Fahrzeug } from "@kfz/shared";
+import { FahrzeugSchema, type AuslesenErgebnis, type Einordnung, type Fahrzeug } from "@kfz/shared";
 import PostalMime, { type Attachment, type Email } from "postal-mime";
 import { kiFuer, type KiAbhaengigkeiten } from "../ki/index.js";
 import { haengeAn, legeAn, type AnfrageKontext, type AnfrageUmgebung } from "../anfragen/dienst.js";
@@ -180,7 +180,7 @@ export async function verarbeiteEingang(nachricht: ForwardableEmailMessage, env:
     }
   }
 
-  const auslese = leseFahrzeug(betreff, text, await einst.lese("mail.marken"), await einst.lese("mail.modellStoppwoerter"));
+  const regelAuslese = leseFahrzeug(betreff, text, await einst.lese("mail.marken"), await einst.lese("mail.modellStoppwoerter"));
   const bezug: MailBezug = {
     messageId: mail.messageId ?? "",
     ...(mail.references ? { references: mail.references } : {}),
@@ -213,6 +213,8 @@ export async function verarbeiteEingang(nachricht: ForwardableEmailMessage, env:
     await parkeFuerMensch(env, einst, { kontakt: absender, name: nameMensch, betreff, text, anhaenge: mail.attachments ?? [], mail, korrelation }, anMensch);
     return;
   }
+
+  const auslese = await ergaenzeDurchKi(env, einst, regelAuslese, [betreff, text].filter(Boolean).join("\n\n"), anhaenge, zielId, korrelation, ki);
 
   if (zielId) {
     if (text !== "" || Object.keys(auslese.fahrzeug).length > 0) {
@@ -257,6 +259,59 @@ export async function verarbeiteEingang(nachricht: ForwardableEmailMessage, env:
     }
     throw e;
   }
+}
+
+/**
+ * Ergänzt die regelbasierte Auslese um KI-Felder aus Text und Bildanhängen. Übernommen wird nur ein
+ * Feld mit mindestens `ki.mindestSicherheit`, das das Schema besteht. Regelbasiert erkannte Felder
+ * haben Vorrang; widersprechen sich zwei KI-Quellen, bleibt das Feld offen (Rückfrage statt Raten).
+ * Ohne KI oder ohne Treffer kommt die regelbasierte Auslese unverändert zurück.
+ */
+async function ergaenzeDurchKi(env: Bindings, einst: Einstellungen, regel: MailAuslese, text: string, anhaenge: Attachment[], anfrageId: string | null, korrelation: string, abh: KiAbhaengigkeiten): Promise<MailAuslese> {
+  const ki = await kiFuer(env, einst, { korrelationsId: korrelation, ...(anfrageId ? { anfrageId } : {}) }, abh);
+  // Fehlt nichts Wesentliches, kostet eine KI-Anfrage nur Geld: die Regeln haben schon alles.
+  const pflicht = ["marke", "modell", ...(await einst.lese("antwort.pflichtangaben"))] as Array<keyof Fahrzeug>;
+  if (pflicht.every((f) => regel.fahrzeug[f] !== undefined)) return regel;
+  const frei = ki.kann("freitext_auslesen") && text !== "";
+  const foto = ki.kann("dokument_auslesen");
+  if (!frei && !foto) return regel;
+
+  const ergebnisse: AuslesenErgebnis[] = [];
+  if (frei) {
+    const r = await ki.freitextAuslesen(text);
+    if (r) ergebnisse.push(r);
+  }
+  if (foto) {
+    const maxAnzahl = await einst.lese("mail.anhangMaxAnzahl");
+    const maxBytes = await einst.lese("mail.anhangMaxBytes");
+    const erlaubt = (await einst.lese("mail.anhangTypen")).map((t) => t.toLowerCase());
+    for (const a of anhaenge.slice(0, maxAnzahl)) {
+      const typ = (a.mimeType ?? "").toLowerCase().split(";")[0]!.trim();
+      if (!typ.startsWith("image/") || !erlaubt.includes(typ)) continue;
+      const bytes = typeof a.content === "string" ? new TextEncoder().encode(a.content) : new Uint8Array(a.content);
+      if (bytes.byteLength > maxBytes) continue;
+      const r = await ki.dokumentAuslesen({ mime: typ, daten: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer });
+      if (r) ergebnisse.push(r);
+    }
+  }
+  if (ergebnisse.length === 0) return regel;
+
+  const mindest = await einst.lese("ki.mindestSicherheit");
+  const kandidaten = new Map<keyof Fahrzeug, unknown[]>();
+  for (const r of ergebnisse) {
+    for (const [feld, wert] of Object.entries(r.fahrzeug) as Array<[keyof Fahrzeug, unknown]>) {
+      if (wert === undefined || feld in regel.fahrzeug) continue;
+      if ((r.sicherheit[feld] ?? 0) < mindest) continue;
+      const teil = FahrzeugSchema.shape[feld].safeParse(wert);
+      if (!teil.success) continue;
+      kandidaten.set(feld, [...(kandidaten.get(feld) ?? []), teil.data]);
+    }
+  }
+  const fahrzeug: Partial<Fahrzeug> = { ...regel.fahrzeug };
+  for (const [feld, werte] of kandidaten) {
+    if (new Set(werte.map((w) => JSON.stringify(w))).size === 1) (fahrzeug as Record<string, unknown>)[feld] = werte[0];
+  }
+  return { ...regel, fahrzeug, klar: fahrzeug.marke !== undefined && fahrzeug.modell !== undefined };
 }
 
 /** Fragt den KI-Anschluss, falls er die Fähigkeit hat; jeder Fehlschlag ist null und wurde vom Adapter schon mit Fehlercode gemeldet. */

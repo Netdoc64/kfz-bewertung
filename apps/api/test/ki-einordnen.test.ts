@@ -168,7 +168,7 @@ describe("Weg ohne KI", () => {
   });
 
   it("Fähigkeit anfrage_einordnen nicht geschaltet → keine KI-Anfrage", async () => {
-    await setze("ki.faehigkeiten", ["freitext_auslesen"]);
+    await setze("ki.faehigkeiten", ["bericht_formulieren"]);
     const client = await mitKi({ text: VOLL, id: "m1@x" });
     expect(client.aufrufe).toHaveLength(0);
     expect((await anfragen()).results).toHaveLength(1);

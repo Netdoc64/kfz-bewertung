@@ -186,7 +186,7 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 ### Phase 6 — KI-Anschluss
 
 - [x] Claude-Adapter für den `KiAnschluss`-Port mit dem offiziellen `@anthropic-ai/sdk`; Modell, Aufwand und Fähigkeiten aus der Registry (`ki.*`), je Fähigkeit schaltbar
-- [ ] Freitext auslesen und Fahrzeugschein-Foto auslesen mit strukturierter Ausgabe (zod), Sicherheit je Feld; unter der Schwelle aus der Registry wird nachgefragt statt übernommen
+- [x] Freitext auslesen und Fahrzeugschein-Foto auslesen mit strukturierter Ausgabe (zod), Sicherheit je Feld; unter der Schwelle aus der Registry wird nachgefragt statt übernommen
 - [x] Anfrage einordnen (Bewertung, Rückfrage-Antwort, sonstiges, Spam) im E-Mail-Eingang; „sonstiges“ → `an_mensch`
 - [ ] Berichtstext formulieren: alle Zahlen kommen aus dem Bewertungskern; ein Test belegt, dass keine Zahl aus der KI-Antwort in Preis oder Bericht übernommen wird
 - [ ] Jede Fähigkeit hat einen Test „KI aus → gleicher Ablauf ohne KI“
