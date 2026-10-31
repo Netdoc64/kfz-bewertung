@@ -74,6 +74,36 @@ describe("App-Modus", () => {
     }
   });
 
+  it("start lädt Beschriftungen und Statusnamen mit einem Abruf von /api/app/beschriftungen", async () => {
+    const urls: string[] = [];
+    const api = erzeugeAppApi(
+      async (url) => {
+        urls.push(url);
+        if (url.endsWith("/beschriftungen")) return antwort({ beschriftungen: { titel: "T" }, statusBeschriftungen: { zur_freigabe: "Wartet" } });
+        return antwort({ eintraege: [], seite: 1, proSeite: 25, gesamt: 0 });
+      },
+      { adresse: "https://a.test", token: "t" },
+    );
+    const st = new Steuerung(api, () => {}, { appModus: true });
+    await st.start();
+    expect(urls.filter((u) => u.endsWith("/beschriftungen"))).toEqual(["https://a.test/api/app/beschriftungen"]);
+    expect(st.zustand.beschriftungen["titel"]).toBe("T");
+    expect(st.zustand.statusNamen["zur_freigabe"]).toBe("Wartet");
+  });
+
+  it("zeigt bei leerem Fehlertext den appFehler.<code>-Text", async () => {
+    const api = erzeugeAppApi(
+      async (url) => {
+        if (url.endsWith("/beschriftungen")) return antwort({ beschriftungen: { "appFehler.NETZ": "Keine Verbindung." }, statusBeschriftungen: {} });
+        throw new Error("offline");
+      },
+      { adresse: "https://a.test", token: "t" },
+    );
+    const st = new Steuerung(api, () => {}, { appModus: true });
+    await st.start();
+    expect(st.zustand.meldung?.text).toBe("Keine Verbindung.");
+  });
+
   it("im Admin-Web löst 401 keine Kopplung aus", async () => {
     let widerrufen = 0;
     const api = erzeugeAppApi(async () => antwort({ fehler: { code: "NICHT_ANGEMELDET", text: "x" } }, 401), { adresse: "https://a.test", token: "t" });

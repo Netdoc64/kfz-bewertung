@@ -106,15 +106,15 @@ export class Steuerung {
     }
     this.setze({
       laedt: false,
-      meldung: { art: "fehler", code: f.code, text: f.text, ...(f.korrelationsId ? { korrelationsId: f.korrelationsId } : {}) },
+      meldung: { art: "fehler", code: f.code, text: f.text || this.zustand.beschriftungen[`appFehler.${f.code}`] || "", ...(f.korrelationsId ? { korrelationsId: f.korrelationsId } : {}) },
     });
   }
 
   async start(): Promise<void> {
     this.setze({ laedt: true });
     // Beschriftungen sind Komfort: fehlen sie, zeigt die Ansicht die Schlüssel, statt zu scheitern.
-    // Die App-API kennt keine Einstellungen-Routen; dort kommen die Statusnamen aus der Liste selbst.
-    const [b, s] = await Promise.all([this.api.beschriftungen().catch(() => ({})), this.optionen.appModus ? {} : this.api.statusNamen().catch(() => ({}))]);
+    // In der App kommen beide aus GET /api/app/beschriftungen (die Api teilt sich den einen Abruf).
+    const [b, s] = await Promise.all([this.api.beschriftungen().catch(() => ({})), this.api.statusNamen().catch(() => ({}))]);
     this.setze({ beschriftungen: b, statusNamen: s });
     await this.ladeListe();
   }
