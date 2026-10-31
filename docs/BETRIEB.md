@@ -185,8 +185,8 @@ nicht mehr gewollte Einträge bleiben offen und zählen zur Alarmschwelle.
 | `nachrichten` (Versandprotokoll) | `kontakt`, `inhalt` | Cron: beide Felder auf `''` |
 | `anfrage_ereignisse` | `notiz` (Freitext), `durch` (Admin-Kennung) | Cron: `notiz` auf `NULL`; `durch` bleibt |
 | `eingang_geparkt` | `kontakt`, `nutzlast` (JSON der Eingabe) | Cron: Zeilen gelöscht, **ab Erstellung** gezählt |
-| `email_eingang`, `email_anhaenge` + R2-Objekte (`r2_schluessel`) | Message-ID, Dateiname, Anhang (Fahrzeugfotos/-papiere) | **keine Löschung im Code** (Lücke) |
-| `berichte` + HTML in D1 oder R2 (`berichte/<anfrageId>/<generation>.html`) | Bewertungsbericht zur Anfrage | **keine Löschung im Code**; ob Personendaten im HTML stehen, ist nicht geprüft (Lücke) |
+| `email_eingang`, `email_anhaenge` + R2-Objekte (`r2_schluessel`) | Message-ID, Dateiname, Anhang (Fahrzeugfotos/-papiere) | Cron und Einzellöschung: Zeilen gelöscht, R2-Objekte zuerst gelöscht |
+| `berichte` + HTML in D1 oder R2 (`berichte/<anfrageId>/<generation>.html`) | Bewertungsbericht zur Anfrage (HTML) | Cron und Einzellöschung: `html` und `r2_schluessel` auf `NULL`, R2-Objekt gelöscht; Zahlen und Eingabe (Fahrzeug) bleiben für die Auswertung |
 | `ki_nutzung` | nur `anfrage_id`, Zähler, Kosten | nicht personenbezogen im engeren Sinn, keine Löschung |
 | `geraete`, `kopplungscodes` | Gerätename, Token-/Code-**Hash**, optional Push-Token | Gerät widerrufbar (`widerrufen_am`); Push-Token bleibt stehen |
 | `dead_letter` | Nutzlast ist der Job (Anfrage-ID, Generation, Korrelation) | keine Löschung |
@@ -209,30 +209,30 @@ npx wrangler d1 execute kfz-bewertung --remote --command "SELECT beginn, status,
 
 ### Auskunft (Art. 15)
 
-**Lücke:** Es gibt keine Route und keinen Export, der alle Daten einer Person ausgibt, und keine
-Suche nach Kontakt über alle Tabellen. Möglich ist heute:
-
-1. Anfragen finden: Admin-Liste `GET /api/admin/anfragen` bzw. `wrangler d1 execute` mit
-   `SELECT id FROM anfragen WHERE kunde_kontakt = '<Kontakt>'`.
-2. Je Anfrage `GET /api/admin/anfragen/:id` — liefert Anfrage, Ereignisse, gesendete Nachrichten
-   (`nachrichten`) und Kundennachrichten (`anfrage_nachrichten`) sowie den Bericht.
-3. Geparkte Eingänge: `GET /api/admin/geparkt` (Anhänge: `…/:id/anhaenge/:anhangId`); nach Kontakt
-   nur per SQL (`eingang_geparkt.kontakt`, `nachrichten.kontakt`).
-
-Die Zusammenstellung zur Auskunft ist Handarbeit; ein fertiger Weg gehört in ein eigenes Thema.
+`POST /api/admin/dsgvo/auskunft` mit `{ "kontakt": "<E-Mail oder Telefon>" }` (Groß-/Kleinschreibung egal).
+Der Kontakt steht im Body, nicht in der URL, damit er in keinem Zugriffsprotokoll landet. Die Antwort
+enthält alles zum Kontakt über alle Tabellen: `anfragen`, `nachrichtenVomKunden`, `ereignisse`,
+`versandteNachrichten`, `geparkteEingaenge`, `emailEingang`, `anhaenge` (nur Verzeichnis: Name, Typ, Größe),
+`berichte` (ohne HTML) und `ankaeufe`. Unbekannter Kontakt: `NICHT_GEFUNDEN`. Mehr Treffer als
+`betrieb.dsgvoAuskunftMaxAnfragen`: `abgeschnitten: true`. Die Anhänge selbst liefert
+`GET /api/admin/geparkt/:id/anhaenge/:anhangId`.
 
 ### Löschung auf Anfrage (Art. 17)
 
-**Lücke:** Es gibt keine Route, die eine einzelne Person auf Verlangen sofort löscht. Die
-Kundenhinweise sagen „Auf Anfrage löschen wir Ihre Daten jederzeit“ (Vorlage `datenschutz` in der
-Registry) — der Code erfüllt das nur über die Frist. Bis es einen Weg gibt:
+`POST /api/admin/dsgvo/loeschung` mit `{ "kontakt": "…", "bestaetigung": "…" }`; die Bestätigung muss den
+Kontakt wiederholen. Gelöscht wird sofort und für alle Anfragen und geparkten Eingänge der Person:
+dieselben Felder wie im Cron (siehe Tabelle), dazu das Versandprotokoll über den Kontakt. Die Anfragen
+bleiben anonym erhalten und tragen ein Ereignis `dsgvo_geloescht` mit der Admin-Kennung (ohne Personenbezug).
 
-- Die Aufbewahrungsfrist ist eine Registry-Größe; ein kurzzeitiges Senken von
-  `betrieb.personendatenAufbewahrungTage` löscht **alle** passenden Anfragen, nicht eine einzelne,
-  und wirkt nur auf Endstatus. Nicht als Einzelweg verwenden.
-- Einzelfall per SQL mit `wrangler d1 execute` ist möglich, aber nicht abgesichert, nicht
-  protokolliert und deckt R2-Anhänge nicht ab. Nur nach Rücksprache und nur mit den im Cron
-  genutzten Anweisungen als Vorlage.
+| Fall | Ergebnis |
+|---|---|
+| Kontakt unbekannt, auch beim zweiten Aufruf | `NICHT_GEFUNDEN`; nichts ändert sich |
+| Bestätigung weicht ab | `EINGABE_UNGUELTIG` |
+| `betrieb.dsgvoEinzelloeschungOffeneAnfragen` = `sperren` und eine Anfrage nicht im Endstatus | `DSGVO_OFFENE_ANFRAGE` |
+| R2 nicht erreichbar | `DSGVO_LOESCHUNG_FEHLGESCHLAGEN` (wiederholbar); die Datenbank bleibt unberührt, der Aufruf kann wiederholt werden |
+
+Push-Token liegen an Geräten der Admin-App (`geraete`), nicht an Kunden, und gehören nicht zur Löschung einer
+Kundin oder eines Kunden.
 
 ## 7. Weiterführend
 

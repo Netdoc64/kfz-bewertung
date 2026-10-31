@@ -6,6 +6,7 @@ import { verarbeiteEmail } from "./email/index.js";
 import { fuehreCronAus } from "./cron/index.js";
 import { verarbeiteQueue } from "./queue/index.js";
 import { anfragenRouten } from "./routen/anfragen.js";
+import { dsgvoRouten } from "./routen/dsgvo.js";
 import { deadLetterRouten } from "./routen/dead-letter.js";
 import { geparktRouten } from "./routen/geparkt.js";
 import { formularRouten } from "./routen/formular.js";
@@ -29,6 +30,7 @@ export const app = new Hono<AppUmgebung>()
   .route("/api/admin/anfragen", anfragenRouten)
   .route("/api/admin/geparkt", geparktRouten)
   .route("/api/admin/dead-letter", deadLetterRouten)
+  .route("/api/admin/dsgvo", dsgvoRouten)
   .route("/api/admin/kennzahlen", kennzahlenRouten)
   .route("/api/admin/geraete", geraeteRouten)
   .route("/api/app", appRouten);

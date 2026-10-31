@@ -1,4 +1,5 @@
 import { STUFEN, meldeFreigabe, ueberspringeStufe, type Stufe } from "../benachrichtigung/index.js";
+import { loeschePersonendaten } from "../dsgvo/index.js";
 import type { PushAnschluss } from "../push/port.js";
 import type { Einstellungen } from "../einstellungen/dienst.js";
 
@@ -113,28 +114,24 @@ export async function berichtsablauf(db: D1Database, korrelation: string, jetzt 
 }
 
 /**
- * DSGVO-Löschung: Kundendaten abgeschlossener Anfragen (Endstatus) werden nach
+ * DSGVO-Löschung: Personendaten abgeschlossener Anfragen (Endstatus) werden nach
  * `betrieb.personendatenAufbewahrungTage` entfernt, die Anfrage selbst bleibt anonym
- * erhalten. Geparkte Eingänge gelten ab Erstellung. Alles in einem Batch; der
- * Marker `personendaten_geloescht_am` macht den zweiten Lauf zum No-op.
+ * erhalten. Dazu gehören Nachrichten, Mail-Eingang, Anhänge samt R2-Objekten und das
+ * Berichts-HTML. Geparkte Eingänge gelten ab Erstellung. Der Marker
+ * `personendaten_geloescht_am` macht den zweiten Lauf zum No-op.
  */
-export async function dsgvoLoeschung(db: D1Database, einstellungen: Einstellungen, jetzt = Date.now()): Promise<AufgabenErgebnis> {
+export async function dsgvoLoeschung(db: D1Database, einstellungen: Einstellungen, jetzt = Date.now(), r2?: R2Bucket): Promise<AufgabenErgebnis> {
   const tage = await einstellungen.lese("betrieb.personendatenAufbewahrungTage");
   const grenze = new Date(jetzt - tage * MS_TAG).toISOString();
-  const jetztIso = new Date(jetzt).toISOString();
-  const faellig = "FROM anfragen WHERE status IN ('angekauft', 'abgesagt', 'abgelehnt') AND personendaten_geloescht_am IS NULL AND geaendert_am <= ?1";
-  const [, , , anf, geparkt] = await db.batch([
-    db.prepare(`UPDATE nachrichten SET kontakt = '', inhalt = '' WHERE anfrage_id IN (SELECT id ${faellig})`).bind(grenze),
-    db.prepare(`DELETE FROM anfrage_nachrichten WHERE anfrage_id IN (SELECT id ${faellig})`).bind(grenze),
-    db.prepare(`UPDATE anfrage_ereignisse SET notiz = NULL WHERE notiz IS NOT NULL AND anfrage_id IN (SELECT id ${faellig})`).bind(grenze),
+  const [anfragen, geparkt] = await Promise.all([
     db
-      .prepare(
-        `UPDATE anfragen SET kunde_name = NULL, kunde_kontakt = NULL, dubletten_schluessel = NULL, personendaten_geloescht_am = ?2 WHERE id IN (SELECT id ${faellig})`,
-      )
-      .bind(grenze, jetztIso),
-    db.prepare("DELETE FROM eingang_geparkt WHERE erstellt_am <= ?1").bind(grenze),
+      .prepare("SELECT id FROM anfragen WHERE status IN ('angekauft', 'abgesagt', 'abgelehnt') AND personendaten_geloescht_am IS NULL AND geaendert_am <= ?1")
+      .bind(grenze)
+      .all<{ id: string }>(),
+    db.prepare("SELECT id FROM eingang_geparkt WHERE erstellt_am <= ?1").bind(grenze).all<{ id: string }>(),
   ]);
-  return { bearbeitet: anf!.meta.changes + geparkt!.meta.changes };
+  const e = await loeschePersonendaten(db, r2, { anfrageIds: anfragen.results.map((r) => r.id), geparktIds: geparkt.results.map((r) => r.id) }, { durch: "system", jetzt });
+  return { bearbeitet: e.anfragen + e.geparkt };
 }
 
 /** Fehleraufräumen: Fehlereinträge, Alarm-Ruhezeiten und alte Cron-Läufe nach `betrieb.fehlerAufbewahrungTage`. */
