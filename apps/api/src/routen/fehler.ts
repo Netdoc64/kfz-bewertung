@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { AppUmgebung } from "../env.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 
-const FilterSchema = z.object({
+export const FilterSchema = z.object({
   offen: z.enum(["ja", "nein", "alle"]).default("ja"),
   abSchwere: z.enum(["info", "warnung", "fehler", "kritisch"]).default("info"),
   grenze: z.coerce.number().int().min(1).max(200).default(50),
