@@ -55,6 +55,14 @@ wurzel.addEventListener("submit", (e) => {
   );
 });
 
+wurzel.addEventListener("submit", (e) => {
+  const form = e.target as HTMLFormElement;
+  if (!form.matches("[data-geparkt-form]")) return;
+  e.preventDefault();
+  const wert = (n: string) => form.querySelector<HTMLInputElement>(`[data-geparkt-feld="${n}"]`)?.value ?? "";
+  void steuerung.gibGeparktFrei(form.dataset.geparktForm ?? "", wert("marke"), wert("modell"), wert("name"), wert("kennzeichen"));
+});
+
 wurzel.addEventListener("click", (e) => {
   const ziel = e.target as HTMLElement;
   const zeile = ziel.closest<HTMLElement>("tr[data-id]");
@@ -64,9 +72,13 @@ wurzel.addEventListener("click", (e) => {
   const quittiere = ziel.closest<HTMLElement>("[data-quittiere]");
   const erneut = ziel.closest<HTMLElement>("[data-erneut]");
   const seite = ziel.closest<HTMLElement>("[data-seite]");
-  if (nav) {
+  const verwerfen = ziel.closest<HTMLElement>("[data-geparkt-verwerfen]");
+  const pruefen = ziel.closest<HTMLElement>("[data-geparkt-pruefen]");
+  if (verwerfen) void steuerung.verwirfGeparkt(verwerfen.dataset.geparktVerwerfen ?? "");
+  else if (pruefen) void steuerung.pruefeGeparkt(pruefen.dataset.geparktPruefen ?? "");
+  else if (nav) {
     const w = nav.dataset.nav;
-    void (w === "einstellungen" ? steuerung.zeigeEinstellungen() : w === "fehler" ? steuerung.zeigeFehler() : w === "deadletter" ? steuerung.zeigeDeadLetter() : w === "kennzahlen" ? steuerung.zeigeKennzahlen() : steuerung.ladeListe());
+    void (w === "einstellungen" ? steuerung.zeigeEinstellungen() : w === "fehler" ? steuerung.zeigeFehler() : w === "deadletter" ? steuerung.zeigeDeadLetter() : w === "kennzahlen" ? steuerung.zeigeKennzahlen() : w === "geparkt" ? steuerung.zeigeGeparkt() : steuerung.ladeListe());
   } else if (bearbeite) steuerung.bearbeite(bearbeite.dataset.bearbeite ?? "");
   else if (erneut) void steuerung.reiheErneutEin(Number(erneut.dataset.erneut));
   else if (quittiere) void steuerung.quittiere(Number(quittiere.dataset.quittiere));

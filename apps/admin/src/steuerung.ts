@@ -8,6 +8,7 @@ import {
   type Detail,
   type EinstellungsEintrag,
   type FehlerEintrag,
+  type GeparkterEintrag,
   type Kennzahlen,
   type Liste,
   type Vorschau,
@@ -30,7 +31,7 @@ export interface Bearbeitung {
 }
 
 export interface Zustand {
-  ansicht: "liste" | "detail" | "einstellungen" | "fehler" | "deadletter" | "kennzahlen";
+  ansicht: "liste" | "detail" | "einstellungen" | "fehler" | "deadletter" | "kennzahlen" | "geparkt";
   laedt: boolean;
   beschriftungen: Beschriftungen;
   statusNamen: Record<string, string>;
@@ -43,6 +44,7 @@ export interface Zustand {
   bearbeitung: Bearbeitung | null;
   fehlerListe: FehlerEintrag[] | null;
   deadLetter: DeadLetterEintrag[] | null;
+  geparkt: GeparkterEintrag[] | null;
   kennzahlen: Kennzahlen | null;
   abweichungen: Abweichungen | null;
   /** Gewählter Zeitraum als Datum (JJJJ-MM-TT); leer = Standardzeitraum der API. */
@@ -76,6 +78,7 @@ export class Steuerung {
     bearbeitung: null,
     fehlerListe: null,
     deadLetter: null,
+    geparkt: null,
     kennzahlen: null,
     abweichungen: null,
     zeitraum: { von: "", bis: "" },
@@ -251,6 +254,52 @@ export class Steuerung {
       return;
     }
     await this.zeigeDeadLetter(hinweis);
+  }
+
+  async zeigeGeparkt(meldung: Meldung | null = null): Promise<void> {
+    this.setze({ ansicht: "geparkt", laedt: true, meldung });
+    try {
+      const geparkt = await this.api.geparktListe();
+      this.setze({ geparkt, laedt: false });
+    } catch (e) {
+      this.fehler(e);
+    }
+  }
+
+  async pruefeGeparkt(id: string): Promise<void> {
+    await this.geparktSchritt(() => this.api.geparktPruefen(id));
+  }
+
+  async verwirfGeparkt(id: string): Promise<void> {
+    await this.geparktSchritt(() => this.api.geparktVerwerfen(id));
+  }
+
+  /** Marke und Modell kommen vom Admin; ob die Freigabe sonst gültig ist, entscheidet die API (EINGABE_UNGUELTIG). */
+  async gibGeparktFrei(id: string, marke: string, modell: string, name?: string, kennzeichen?: string): Promise<void> {
+    await this.geparktSchritt(() =>
+      this.api.geparktFreigeben(id, {
+        fahrzeug: { marke: marke.trim(), modell: modell.trim() },
+        ...(name?.trim() ? { name: name.trim() } : {}),
+        ...(kennzeichen?.trim() ? { kennzeichen: kennzeichen.trim() } : {}),
+      }),
+    );
+  }
+
+  /** Schon entschieden (STATUSWECHSEL_UNZULAESSIG / VERSION_KONFLIKT): die Liste neu zu laden zeigt den wahren Stand. */
+  private async geparktSchritt(aufruf: () => Promise<unknown>): Promise<void> {
+    if (this.zustand.laedt) return;
+    this.setze({ laedt: true, meldung: null });
+    try {
+      await aufruf();
+    } catch (e) {
+      if (e instanceof ApiFehler && (e.code === "STATUSWECHSEL_UNZULAESSIG" || e.code === "VERSION_KONFLIKT")) {
+        await this.zeigeGeparkt({ art: "konflikt", code: e.code, text: e.text });
+        return;
+      }
+      this.fehler(e);
+      return;
+    }
+    await this.zeigeGeparkt();
   }
 
   async zeigeKennzahlen(): Promise<void> {

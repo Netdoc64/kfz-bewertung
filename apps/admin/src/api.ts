@@ -149,6 +149,26 @@ export interface Dauer {
   max: number | null;
 }
 
+export interface GeparkterEintrag {
+  id: string;
+  kontakt: string;
+  kanal: string;
+  nutzlast: { name?: string; betreff?: string; text?: string; [feld: string]: unknown } | null;
+  /** Rohwert (flutschutz, mail_unklar, ki_sonstiges, ki_rueckfrage_unzuordenbar); der Nutzertext steht in den Beschriftungen `geparktGrund.<grund>`. */
+  grund: string;
+  erstellt_am: string;
+  geprueft_am: string | null;
+  geprueft_von: string | null;
+  entscheidung: "freigegeben" | "verworfen" | null;
+  anfrage_id: string | null;
+}
+
+export interface GeparktFreigabe {
+  name?: string;
+  fahrzeug: { marke: string; modell: string };
+  kennzeichen?: string;
+}
+
 export interface Kennzahlen {
   zeitraum: { von: string; bis: string };
   anfragen: number;
@@ -258,6 +278,11 @@ export function erzeugeApi(abruf: Abruf, basis = "/api/admin", optionen: ApiOpti
       const s = q.toString();
       return rufe<Kennzahlen>(`/kennzahlen${s ? `?${s}` : ""}`);
     },
+    geparktListe: async (): Promise<GeparkterEintrag[]> => (await rufe<{ eintraege: GeparkterEintrag[] }>("/geparkt")).eintraege,
+    geparktPruefen: (id: string): Promise<GeparkterEintrag> => rufe(`/geparkt/${encodeURIComponent(id)}/pruefen`, { method: "POST" }),
+    geparktVerwerfen: (id: string): Promise<GeparkterEintrag> => rufe(`/geparkt/${encodeURIComponent(id)}/verwerfen`, { method: "POST" }),
+    geparktFreigeben: (id: string, freigabe: GeparktFreigabe): Promise<{ id: string }> =>
+      rufe(`/geparkt/${encodeURIComponent(id)}/freigeben`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(freigabe) }),
     abweichungen: (): Promise<Abweichungen> => rufe("/anfragen/auswertung/ankaeufe"),
     aktion: (id: string, aktion: string, version: number, notiz?: string, ankaufspreisEuro?: number): Promise<{ version: number }> =>
       rufe(`${anfragenPfad}/${encodeURIComponent(id)}/aktion`, {
