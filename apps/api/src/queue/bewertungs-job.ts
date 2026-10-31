@@ -10,6 +10,8 @@ import type { Einstellungen } from "../einstellungen/dienst.js";
 import { AppFehler, alsAppFehler } from "../fehler/app-fehler.js";
 import { fehlerSpeichern } from "../fehler/speicher.js";
 import { waehleQuelle } from "../quelle/index.js";
+import type { PushAnschluss } from "../push/port.js";
+import { pushFuer } from "../push/index.js";
 import type { Suche } from "../quelle/port.js";
 
 export const BewertungsJobSchema = z.object({
@@ -33,6 +35,8 @@ export interface JobAbhaengigkeiten {
   berichte?: R2Bucket;
   /** Für die sofortige Freigabe-Meldung (A3); ohne Angabe holt der Cron sie nach. */
   email?: SendEmail;
+  /** Statt des FCM-Anschlusses aus `env` (Tests). */
+  push?: PushAnschluss;
   jetzt?: () => Date;
   /** Für den KI-Anschluss (`kiFuer`); ohne Angabe läuft der Bericht ohne KI. */
   env?: Bindings;
@@ -167,7 +171,7 @@ export async function verarbeiteBewertungsJob(
   await beende("bewertung_fertig");
   if (abh.email) {
     // A3: der Admin erfährt sofort von der offenen Freigabe; scheitert das, holt der Cron es nach.
-    await meldeFreigabe(db, einstellungen, abh.email, { id: job.anfrageId, generation: job.generation, fahrzeug: anfrage.fahrzeug }, "neu", 0).catch((e) =>
+    await meldeFreigabe(db, einstellungen, abh.email, { id: job.anfrageId, generation: job.generation, fahrzeug: anfrage.fahrzeug }, "neu", 0, abh.push ?? (abh.env ? pushFuer(abh.env) : undefined)).catch((e) =>
       fehlerSpeichern(db, { fehler: alsAppFehler(e), ort: "queue:freigabe-benachrichtigung", korrelationsId: job.korrelation }, "info", abh.email),
     );
   }

@@ -4,6 +4,7 @@ import { geraetePflicht, koppeln, type GeraeteUmgebung } from "../geraete/index.
 import { aktionHandler, detailHandler, listeHandler, type HandlerKontext } from "./anfragen.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 
+const PushTokenSchema = z.object({ token: z.string().trim().min(1).max(4096) });
 const KoppelnSchema = z.object({ code: z.string().min(1).max(64), name: z.string().trim().min(1).max(80) });
 
 /**
@@ -17,6 +18,13 @@ export const appRouten = new Hono<GeraeteUmgebung>()
     return c.json(await koppeln(c.env.DB, c.get("einstellungen"), p.data.code, p.data.name), 201);
   })
   .use("*", geraetePflicht)
+  // Das Gerät meldet sein FCM-Token; es gilt nur für das Gerät des Geräte-Tokens.
+  .post("/push-token", async (c) => {
+    const p = PushTokenSchema.safeParse(await c.req.json().catch(() => null));
+    if (!p.success) throw new AppFehler("EINGABE_UNGUELTIG", "Push-Token erforderlich", { details: p.error.issues });
+    await c.env.DB.prepare("UPDATE geraete SET push_token = ?2 WHERE id = ?1").bind(c.get("geraet"), p.data.token).run();
+    return c.json({ ok: true });
+  })
   // Dieselben Dienstfunktionen wie /api/admin/anfragen, nur mit Kanal "app" und der Gerätekennung als „wer".
   .get("/", (c) => listeHandler(c as unknown as HandlerKontext))
   .get("/:id", (c) => detailHandler(c as unknown as HandlerKontext))

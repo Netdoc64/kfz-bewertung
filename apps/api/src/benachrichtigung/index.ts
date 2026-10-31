@@ -1,6 +1,8 @@
 import { sendeAdminMail } from "../alarm/absender.js";
 import type { Einstellungen } from "../einstellungen/dienst.js";
-import { AppFehler } from "../fehler/app-fehler.js";
+import { AppFehler, alsAppFehler } from "../fehler/app-fehler.js";
+import { fehlerSpeichern } from "../fehler/speicher.js";
+import type { PushAnschluss } from "../push/port.js";
 
 /** Stufen der Freigabe-Benachrichtigung (A3), aufsteigend. */
 export const STUFEN = ["neu", "erinnerung", "eskalation"] as const;
@@ -32,6 +34,9 @@ function fuelle(vorlage: string, werte: Record<string, string>): string {
  * wird der Anspruch zurückgenommen, damit der nächste Lauf es erneut versucht.
  * Der Kanal `whatsapp` ist für Admin-Meldungen nicht angebunden: es geht per E-Mail raus,
  * statt dass die Freigabe unbemerkt liegen bleibt. Mit `aus` passiert nichts.
+ * Mit `push` (und `push.aktiv`) geht nach der Mail zusätzlich ein Push an jedes nicht widerrufene,
+ * nicht abgelaufene Gerät mit Push-Token; ein Push-Fehler landet als PUSH_FEHLGESCHLAGEN im Fehlerspeicher
+ * und ändert am Ergebnis nichts.
  * Gibt true zurück, wenn jetzt gesendet wurde.
  */
 export async function meldeFreigabe(
@@ -41,6 +46,7 @@ export async function meldeFreigabe(
   anfrage: FreigabeAnfrage,
   stufe: Stufe,
   stunden: number,
+  push?: PushAnschluss,
 ): Promise<boolean> {
   if ((await einstellungen.lese("benachrichtigung.kanal")) === "aus") return false;
   const texte = (await einstellungen.lese("benachrichtigung.texte"))[stufe];
@@ -62,7 +68,37 @@ export async function meldeFreigabe(
       .run();
     throw e;
   }
+  if (push) await pushAnGeraete(db, einstellungen, email, push, stufe, werte, anfrage.id);
   return true;
+}
+
+async function pushAnGeraete(
+  db: D1Database,
+  einstellungen: Einstellungen,
+  email: SendEmail,
+  push: PushAnschluss,
+  stufe: Stufe,
+  werte: Record<string, string>,
+  anfrageId: string,
+): Promise<void> {
+  try {
+    if (!(await einstellungen.lese("push.aktiv"))) return;
+    const texte = (await einstellungen.lese("push.texte"))[stufe];
+    if (!texte) return;
+    const { results } = await db
+      .prepare("SELECT id, push_token FROM geraete WHERE widerrufen_am IS NULL AND ablauf_am > strftime('%Y-%m-%dT%H:%M:%fZ', 'now') AND push_token IS NOT NULL AND push_token != ''")
+      .all<{ id: string; push_token: string }>();
+    for (const g of results) {
+      try {
+        await push.sende(g.push_token, fuelle(texte.titel, werte), fuelle(texte.text, werte));
+      } catch (e) {
+        const f = e instanceof AppFehler && e.code === "PUSH_FEHLGESCHLAGEN" ? e : new AppFehler("PUSH_FEHLGESCHLAGEN", undefined, { ursache: e, kontext: { anfrageId, geraetId: g.id } });
+        await fehlerSpeichern(db, { fehler: f, ort: "benachrichtigung:push", korrelationsId: anfrageId }, "info", email);
+      }
+    }
+  } catch (e) {
+    await fehlerSpeichern(db, { fehler: alsAppFehler(e), ort: "benachrichtigung:push", korrelationsId: anfrageId }, "info", email);
+  }
 }
 
 /** Hält eine Stufe als erledigt fest, ohne zu senden (übersprungene Vorstufe). */
