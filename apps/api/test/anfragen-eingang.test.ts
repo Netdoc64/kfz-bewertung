@@ -308,11 +308,11 @@ describe("Admin-Ansicht geparkter Eingänge", () => {
   });
 
   describe("mail_unklar mit Anhang", () => {
-    async function parkeMail(): Promise<string> {
+    async function parkeMail(grund = "mail_unklar"): Promise<string> {
       const id = crypto.randomUUID();
       const nutzlast = { name: "Bernd", betreff: "Mein Auto", text: "Bitte bewerten", messageId: "m1@x" };
-      await env.DB.prepare("INSERT INTO eingang_geparkt (id, kontakt, kanal, nutzlast, grund, korrelation) VALUES (?1, 'bernd@example.de', 'email', ?2, 'mail_unklar', 'k')")
-        .bind(id, JSON.stringify(nutzlast))
+      await env.DB.prepare("INSERT INTO eingang_geparkt (id, kontakt, kanal, nutzlast, grund, korrelation) VALUES (?1, 'bernd@example.de', 'email', ?2, ?3, 'k')")
+        .bind(id, JSON.stringify(nutzlast), grund)
         .run();
       const schluessel = `anhaenge/geparkt-${id}/a1`;
       await env.BERICHTE.put(schluessel, new Uint8Array([1, 2, 3]));
@@ -337,6 +337,12 @@ describe("Admin-Ansicht geparkter Eingänge", () => {
       const id = await parkeMail();
       expect(await code(await freigabe(id, {}))).toBe("EINGABE_UNGUELTIG");
       expect(await env.DB.prepare("SELECT entscheidung FROM eingang_geparkt WHERE id = ?1").bind(id).first()).toEqual({ entscheidung: null });
+    });
+
+    it.each(["ki_sonstiges", "ki_rueckfrage_unzuordenbar"])("KI-Grund %s: Freigabe mit Fahrzeugangaben legt die Anfrage an, ohne wird abgewiesen", async (grund) => {
+      const id = await parkeMail(grund);
+      expect(await code(await freigabe(id, {}))).toBe("EINGABE_UNGUELTIG");
+      expect((await freigabe(id, { fahrzeug: vollstaendig })).status).toBe(201);
     });
 
     it("Freigabe legt die Anfrage an und hängt Anhänge und Mail-Zuordnung um", async () => {
