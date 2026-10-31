@@ -204,6 +204,17 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 - [x] `npm run apk -w @kfz/admin` baut eine Debug-APK; der Befehl steht im README
 - [x] Ende-zu-Ende-Test: Gerät koppeln → Freigabe über die App-API → Status `freigegeben`; widerrufenes Token wird abgewiesen
 
+### Phase 8 — Härtung
+
+- [ ] Sicherheits-Review aller Routen nach OWASP API Top 10; Befunde in `docs/SICHERHEIT.md` mit Stand je Befund, jeder behobene mit Test
+- [ ] Rate-Limits für Formular, E-Mail-Eingang und App-API, Grenzwerte aus der Registry; Test für die Überschreitung
+- [ ] `npm run coverage` mit Mindestwerten (Zeilen ≥ 85 %, Zweige ≥ 75 %), CI bricht darunter ab
+- [ ] OpenAPI-Spezifikation aus den zod-Schemas erzeugt (`npm run openapi`); CI prüft, dass sie aktuell ist
+- [ ] Admin-Web und App-Modus barrierefrei: axe-Test ohne schwere Befunde, Tastaturbedienung, Kontrast
+- [ ] Betriebshandbuch `docs/BETRIEB.md`: Deploy, Migrationen, Not-Aus, Alarme, Wiederanlauf aus Dead-Letter, DSGVO-Auskunft und -Löschung
+- [ ] Lasttest des Bewertungs-Jobs mit 500 Mock-Anfragen: keine Doppelverarbeitung, Laufzeit im festgelegten Rahmen
+- [ ] `npm audit --omit=dev --audit-level=high` ohne Befund
+
 ## Braucht einen Menschen
 
 | Was | Für | Blockiert |
