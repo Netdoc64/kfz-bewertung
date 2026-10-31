@@ -1,4 +1,5 @@
-import type { Fahrzeug } from "./fahrzeug.js";
+import { z } from "zod";
+import { FahrzeugSchema, type Fahrzeug } from "./fahrzeug.js";
 
 /**
  * Optionaler KI-Anschluss. Die Bewertung braucht ihn nicht: jede Fähigkeit hat
@@ -16,6 +17,26 @@ export interface AuslesenErgebnis {
 }
 
 export type Einordnung = "bewertung" | "rueckfrage_antwort" | "sonstiges" | "spam";
+
+/** Zuordnung eines KI-Aufrufs für Kosten und Fehlerspeicher. */
+export interface KiKontext {
+  /** Anfrage, der Token und Kosten in `ki_nutzung` zugeordnet werden. */
+  anfrageId?: string;
+  korrelationsId?: string;
+}
+
+export const EINORDNUNGEN = ["bewertung", "rueckfrage_antwort", "sonstiges", "spam"] as const;
+export const EinordnungSchema = z.enum(EINORDNUNGEN);
+
+const SicherheitSchema = z.number().min(0).max(1);
+
+/** Geprüfte Form einer KI-Antwort beim Auslesen; unbekannte Felder werden verworfen. */
+export const AuslesenErgebnisSchema = z.object({
+  fahrzeug: FahrzeugSchema.partial(),
+  sicherheit: z.object(
+    Object.fromEntries(Object.keys(FahrzeugSchema.shape).map((k) => [k, SicherheitSchema.optional()])) as Record<keyof Fahrzeug, z.ZodOptional<typeof SicherheitSchema>>,
+  ),
+});
 
 export interface BerichtEingabe {
   sprache: string;
