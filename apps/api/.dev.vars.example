@@ -7,3 +7,6 @@
 # Phase 4 — Versand über den Manager (docs/manager-versand.md):
 # MANAGER_VERSAND_URL=
 # MANAGER_VERSAND_HMAC_SCHLUESSEL=
+# Phase 6/7 — Push (KI_API_SCHLUESSEL siehe oben):
+# PUSH_FCM_PROJEKT=
+# PUSH_FCM_DIENSTKONTO=
