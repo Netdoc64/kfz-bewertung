@@ -571,6 +571,7 @@ export const EINSTELLUNGEN = {
   "ratenlimit.email.fensterSekunden": def("betrieb", z.number().int().min(1), 3600, "Länge des Zeitfensters der Ratenbegrenzung für E-Mail-Eingang in Sekunden.", { max: 86400 }),
   "ratenlimit.app.max": def("betrieb", z.number().int().min(1), 120, "Höchstzahl Aufrufe der App-API je Absender und Fenster; darüber 429.", { max: 10000 }),
   "ratenlimit.app.fensterSekunden": def("betrieb", z.number().int().min(1), 60, "Länge des Zeitfensters der Ratenbegrenzung für die App-API in Sekunden.", { max: 86400 }),
+  "sicherheit.bodyMaxBytes": def("betrieb", z.number().int().min(1024), 262144, "Größte erlaubte Länge eines Anfrage-Bodys der API in Bytes; darüber 413.", { max: 5242880 }),
 
   // Eingang
   "eingang.maxJeAbsenderUndTag": def(
