@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { geraetePflicht, koppeln, type GeraeteUmgebung } from "../geraete/index.js";
+import { aktionHandler, detailHandler, listeHandler, type HandlerKontext } from "./anfragen.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 
 const KoppelnSchema = z.object({ code: z.string().min(1).max(64), name: z.string().trim().min(1).max(80) });
@@ -15,4 +16,8 @@ export const appRouten = new Hono<GeraeteUmgebung>()
     if (!p.success) throw new AppFehler("EINGABE_UNGUELTIG", "Code und Gerätename erforderlich", { details: p.error.issues });
     return c.json(await koppeln(c.env.DB, c.get("einstellungen"), p.data.code, p.data.name), 201);
   })
-  .use("*", geraetePflicht);
+  .use("*", geraetePflicht)
+  // Dieselben Dienstfunktionen wie /api/admin/anfragen, nur mit Kanal "app" und der Gerätekennung als „wer".
+  .get("/", (c) => listeHandler(c as unknown as HandlerKontext))
+  .get("/:id", (c) => detailHandler(c as unknown as HandlerKontext))
+  .post("/:id/aktion", (c) => aktionHandler(c as unknown as HandlerKontext, "app"));
