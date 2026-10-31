@@ -25,6 +25,12 @@ export const appRouten = new Hono<GeraeteUmgebung>()
     await c.env.DB.prepare("UPDATE geraete SET push_token = ?2 WHERE id = ?1").bind(c.get("geraet"), p.data.token).run();
     return c.json({ ok: true });
   })
+  // Nur lesen: Texte der Oberfläche und Statusnamen, damit die App Beschriftungen statt Schlüssel zeigt.
+  .get("/beschriftungen", async (c) => {
+    const e = c.get("einstellungen");
+    const [beschriftungen, statusBeschriftungen] = await Promise.all([e.lese("oberflaeche.beschriftungen"), e.lese("ablauf.statusBeschriftungen")]);
+    return c.json({ beschriftungen, statusBeschriftungen });
+  })
   // Dieselben Dienstfunktionen wie /api/admin/anfragen, nur mit Kanal "app" und der Gerätekennung als „wer".
   .get("/", (c) => listeHandler(c as unknown as HandlerKontext))
   .get("/:id", (c) => detailHandler(c as unknown as HandlerKontext))

@@ -143,3 +143,16 @@ describe("Ende-zu-Ende: App-API", () => {
     expect(await env.DB.prepare("SELECT preis_euro, erfasst_von FROM ankaeufe WHERE anfrage_id = ?1").bind(id).first()).toEqual({ preis_euro: 9500, erfasst_von: `geraet:${geraetId}` });
   });
 });
+
+describe("App-API: Beschriftungen", () => {
+  it("liefert Beschriftungen und Statusnamen mit Geräte-Token, ohne Token 401", async () => {
+    expect((await anfrage("/api/app/beschriftungen")).status).toBe(401);
+    const { token } = await koppeln();
+    await setze("ablauf.statusBeschriftungen", { eingegangen: "Neu" });
+    const r = await mitToken(token, "/api/app/beschriftungen");
+    expect(r.status).toBe(200);
+    const k = (await r.json()) as { beschriftungen: Record<string, string>; statusBeschriftungen: Record<string, string> };
+    expect(k.statusBeschriftungen).toEqual({ eingegangen: "Neu" });
+    for (const s of ["kopplungTitel", "kopplungAdresse", "kopplungCode", "kopplungName", "kopplungKnopf"]) expect(k.beschriftungen[s]).toBeTruthy();
+  });
+});
