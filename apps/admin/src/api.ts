@@ -157,6 +157,15 @@ export interface Kennzahlen {
   konfidenz: { berichte: number; mittel: number | null; klassen: { von: number | null; bis: number | null; anzahl: number }[] };
   fehlerrate: { bewertungen: number; fehlgeschlagen: number; rate: number | null };
   freigabedauer: Dauer;
+  ki: {
+    aufrufe: number;
+    anfragen: number;
+    tokenEin: number;
+    tokenAus: number;
+    kostenEuro: number;
+    kostenJeAnfrage: number | null;
+    faehigkeiten: Record<string, { aufrufe: number; tokenEin: number; tokenAus: number; kostenEuro: number }>;
+  };
 }
 
 export interface AbweichungsZeile {

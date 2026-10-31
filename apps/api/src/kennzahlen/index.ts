@@ -33,6 +33,34 @@ export interface KonfidenzKlasse {
   anzahl: number;
 }
 
+export interface KiFaehigkeit {
+  aufrufe: number;
+  tokenEin: number;
+  tokenAus: number;
+  kostenEuro: number;
+}
+
+export interface KiNutzung {
+  aufrufe: number;
+  /** Verschiedene Anfragen mit mindestens einem KI-Aufruf. */
+  anfragen: number;
+  tokenEin: number;
+  tokenAus: number;
+  kostenEuro: number;
+  /** Kosten gesamt geteilt durch `anfragen`; `null` ohne Anfrage. */
+  kostenJeAnfrage: number | null;
+  faehigkeiten: Record<string, KiFaehigkeit>;
+}
+
+/** Eine Zeile aus `ki_nutzung`, nach Fähigkeit gruppiert. */
+export interface KiZeile {
+  faehigkeit: string;
+  aufrufe: number;
+  token_ein: number;
+  token_aus: number;
+  kosten_euro: number;
+}
+
 export interface Kennzahlen {
   zeitraum: Zeitraum;
   anfragen: number;
@@ -41,6 +69,7 @@ export interface Kennzahlen {
   konfidenz: { berichte: number; mittel: number | null; klassen: KonfidenzKlasse[] };
   fehlerrate: { bewertungen: number; fehlgeschlagen: number; rate: number | null };
   freigabedauer: Dauer;
+  ki: KiNutzung;
 }
 
 const ms = (t: string) => Date.parse(t);
@@ -63,12 +92,28 @@ export function konfidenzKlassen(werte: number[], grenzen: number[]): KonfidenzK
   return klassen;
 }
 
+export function kiNutzung(zeilen: KiZeile[], anfragen: number): KiNutzung {
+  const faehigkeiten: Record<string, KiFaehigkeit> = {};
+  let aufrufe = 0;
+  let tokenEin = 0;
+  let tokenAus = 0;
+  let kosten = 0;
+  for (const z of zeilen) {
+    faehigkeiten[z.faehigkeit] = { aufrufe: z.aufrufe, tokenEin: z.token_ein, tokenAus: z.token_aus, kostenEuro: runde(z.kosten_euro) };
+    aufrufe += z.aufrufe;
+    tokenEin += z.token_ein;
+    tokenAus += z.token_aus;
+    kosten += z.kosten_euro;
+  }
+  return { aufrufe, anfragen, tokenEin, tokenAus, kostenEuro: runde(kosten), kostenJeAnfrage: verhaeltnis(kosten, anfragen), faehigkeiten };
+}
+
 /**
  * Rechnet die Kennzahlen aus Ereignissen (im Zeitraum begonnen) und Konfidenzwerten der Berichte.
  * Verweildauer: Zeit von einem Statuswechsel bis zum nächsten Ereignis derselben Anfrage;
  * ohne Folgeereignis ist die Anfrage noch dort und zählt unter `offen`.
  */
-export function berechne(zeitraum: Zeitraum, ereignisse: EreignisZeile[], konfidenzen: number[], grenzen: number[]): Kennzahlen {
+export function berechne(zeitraum: Zeitraum, ereignisse: EreignisZeile[], konfidenzen: number[], grenzen: number[], ki: KiNutzung = kiNutzung([], 0)): Kennzahlen {
   const verweil = new Map<string, number[]>();
   let offen = 0;
   const freigabe: number[] = [];
@@ -125,11 +170,12 @@ export function berechne(zeitraum: Zeitraum, ereignisse: EreignisZeile[], konfid
     },
     fehlerrate: { bewertungen, fehlgeschlagen, rate: verhaeltnis(fehlgeschlagen, bewertungen) },
     freigabedauer: dauer(freigabe),
+    ki,
   };
 }
 
 export async function ladeKennzahlen(db: D1Database, zeitraum: Zeitraum, grenzen: number[]): Promise<Kennzahlen> {
-  const [ereignisse, berichte] = await Promise.all([
+  const [ereignisse, berichte, kiZeilen, kiAnfragen] = await Promise.all([
     db
       .prepare(
         `SELECT * FROM (
@@ -144,7 +190,18 @@ export async function ladeKennzahlen(db: D1Database, zeitraum: Zeitraum, grenzen
       .prepare("SELECT json_extract(zahlen, '$.konfidenz') AS konfidenz FROM berichte WHERE erstellt_am >= ?1 AND erstellt_am < ?2")
       .bind(zeitraum.von, zeitraum.bis)
       .all<{ konfidenz: number | null }>(),
+    db
+      .prepare(
+        `SELECT faehigkeit, COUNT(*) AS aufrufe, SUM(token_ein) AS token_ein, SUM(token_aus) AS token_aus, SUM(kosten_euro) AS kosten_euro
+         FROM ki_nutzung WHERE am >= ?1 AND am < ?2 GROUP BY faehigkeit ORDER BY faehigkeit`,
+      )
+      .bind(zeitraum.von, zeitraum.bis)
+      .all<KiZeile>(),
+    db
+      .prepare("SELECT COUNT(DISTINCT anfrage_id) AS n FROM ki_nutzung WHERE am >= ?1 AND am < ?2")
+      .bind(zeitraum.von, zeitraum.bis)
+      .first<{ n: number }>(),
   ]);
   const konfidenzen = berichte.results.map((b) => b.konfidenz).filter((k): k is number => typeof k === "number");
-  return berechne(zeitraum, ereignisse.results, konfidenzen, grenzen);
+  return berechne(zeitraum, ereignisse.results, konfidenzen, grenzen, kiNutzung(kiZeilen.results, kiAnfragen?.n ?? 0));
 }
