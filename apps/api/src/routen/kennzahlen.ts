@@ -6,7 +6,7 @@ import { ladeKennzahlen } from "../kennzahlen/index.js";
 
 const TAG_MS = 86_400_000;
 const ZeitSchema = z.string().datetime({ offset: true });
-const FilterSchema = z.object({ von: ZeitSchema.optional(), bis: ZeitSchema.optional() });
+export const FilterSchema = z.object({ von: ZeitSchema.optional(), bis: ZeitSchema.optional() });
 
 /** Admin-Kennzahlen (A12). Zeitraum `?von=&bis=` (ISO); ohne Angabe die letzten `ablauf.kennzahlenZeitraumTage`. */
 export const kennzahlenRouten = new Hono<AppUmgebung>().get("/", async (c) => {

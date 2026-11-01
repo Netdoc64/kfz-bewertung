@@ -36,8 +36,8 @@ function navigation(z: Zustand, t: T): string {
   const knopf = (ziel: string, text: string, aktiv: boolean) =>
     `<button data-nav="${ziel}"${aktiv ? ' disabled aria-current="page"' : ""}>${esc(text)}</button>`;
   const anfragen = z.ansicht === "liste";
-  if (z.appModus) return `<nav class="haupt">${knopf("anfragen", t("navAnfragen"), anfragen)}</nav>`;
-  return `<nav class="haupt">${knopf("anfragen", t("navAnfragen"), anfragen)} ${knopf("einstellungen", t("navEinstellungen"), z.ansicht === "einstellungen")} ${knopf("fehler", t("navFehler"), z.ansicht === "fehler")} ${knopf("deadletter", t("navDeadLetter"), z.ansicht === "deadletter")} ${knopf("kennzahlen", t("navKennzahlen"), z.ansicht === "kennzahlen")} ${knopf("geparkt", t("navGeparkt"), z.ansicht === "geparkt")}</nav>`;
+  if (z.appModus) return `<nav class="haupt" aria-label="${esc(t("titel"))}">${knopf("anfragen", t("navAnfragen"), anfragen)}</nav>`;
+  return `<nav class="haupt" aria-label="${esc(t("titel"))}">${knopf("anfragen", t("navAnfragen"), anfragen)} ${knopf("einstellungen", t("navEinstellungen"), z.ansicht === "einstellungen")} ${knopf("fehler", t("navFehler"), z.ansicht === "fehler")} ${knopf("deadletter", t("navDeadLetter"), z.ansicht === "deadletter")} ${knopf("kennzahlen", t("navKennzahlen"), z.ansicht === "kennzahlen")} ${knopf("geparkt", t("navGeparkt"), z.ansicht === "geparkt")}</nav>`;
 }
 
 function filterLeiste(z: Zustand, t: T): string {
@@ -69,10 +69,10 @@ export function rendereListe(z: Zustand): string {
       ? `<table><thead><tr><th>${esc(t("kunde"))}</th><th>${esc(t("fahrzeug"))}</th><th>${esc(t("status"))}</th><th>${esc(t("geaendert"))}</th></tr></thead><tbody>${zeilen}</tbody></table>`
       : `<p>${esc(t("leer"))}</p>`;
     inhalt +=
-      `<nav class="seiten"><button data-seite="${l.seite - 1}"${l.seite <= 1 ? " disabled" : ""}>${esc(t("zurueckSeite"))}</button> ` +
+      `<nav class="seiten" aria-label="${esc(t("seite"))}"><button data-seite="${l.seite - 1}"${l.seite <= 1 ? " disabled" : ""}>${esc(t("zurueckSeite"))}</button> ` +
       `${esc(t("seite"))} ${l.seite} ${esc(t("von"))} ${seiten} ` +
       `<button data-seite="${l.seite + 1}"${l.seite >= seiten ? " disabled" : ""}>${esc(t("vor"))}</button></nav>`;
-  } else if (z.laedt) inhalt = `<p>${esc(t("laedt"))}</p>`;
+  } else if (z.laedt) inhalt = `<p role="status">${esc(t("laedt"))}</p>`;
   return `${navigation(z, t)}<h1>${esc(t("titel"))}</h1>${meldung(z, t)}${filterLeiste(z, t)}${inhalt}`;
 }
 
@@ -91,7 +91,7 @@ export function rendereDetail(z: Zustand): string {
   const t = beschrifter(z);
   const d = z.detail;
   const kopf = `${navigation(z, t)}<button data-zurueck>${esc(t("zurueck"))}</button>${meldung(z, t)}`;
-  if (!d) return kopf + (z.laedt ? `<p>${esc(t("laedt"))}</p>` : "");
+  if (!d) return kopf + (z.laedt ? `<p role="status">${esc(t("laedt"))}</p>` : "");
   const a = d.anfrage;
   const ereignisse = d.ereignisse
     .map((e) => `<li>${esc(datum(e.am))} — ${esc(e.statusNachText)} (${esc(e.durch)})${e.notiz ? `: ${esc(e.notiz)}` : ""}</li>`)
@@ -158,7 +158,7 @@ function bearbeitungsFeld(z: Zustand, t: T): string {
 
 export function rendereEinstellungen(z: Zustand): string {
   const t = beschrifter(z);
-  let inhalt = z.laedt && !z.einstellungen ? `<p>${esc(t("laedt"))}</p>` : "";
+  let inhalt = z.laedt && !z.einstellungen ? `<p role="status">${esc(t("laedt"))}</p>` : "";
   if (z.einstellungen) {
     const zeilen = z.einstellungen
       .map(
@@ -174,7 +174,7 @@ export function rendereEinstellungen(z: Zustand): string {
 
 export function rendereFehler(z: Zustand): string {
   const t = beschrifter(z);
-  let inhalt = z.laedt && !z.fehlerListe ? `<p>${esc(t("laedt"))}</p>` : "";
+  let inhalt = z.laedt && !z.fehlerListe ? `<p role="status">${esc(t("laedt"))}</p>` : "";
   if (z.fehlerListe) {
     const zeilen = z.fehlerListe
       .map(
@@ -192,7 +192,7 @@ export function rendereFehler(z: Zustand): string {
 
 export function rendereDeadLetter(z: Zustand): string {
   const t = beschrifter(z);
-  let inhalt = z.laedt && !z.deadLetter ? `<p>${esc(t("laedt"))}</p>` : "";
+  let inhalt = z.laedt && !z.deadLetter ? `<p role="status">${esc(t("laedt"))}</p>` : "";
   if (z.deadLetter) {
     const zeilen = z.deadLetter
       .map(
@@ -233,7 +233,7 @@ function geparktZeile(g: GeparkterEintrag, z: Zustand, t: T): string {
 
 export function rendereGeparkt(z: Zustand): string {
   const t = beschrifter(z);
-  let inhalt = z.laedt && !z.geparkt ? `<p>${esc(t("laedt"))}</p>` : "";
+  let inhalt = z.laedt && !z.geparkt ? `<p role="status">${esc(t("laedt"))}</p>` : "";
   if (z.geparkt) inhalt = z.geparkt.length ? `<ul class="geparkt">${z.geparkt.map((g) => geparktZeile(g, z, t)).join("")}</ul>` : `<p>${esc(t("geparktLeer"))}</p>`;
   return `${navigation(z, t)}<h1>${esc(t("geparktTitel"))}</h1>${meldung(z, t)}${inhalt}`;
 }
@@ -266,7 +266,7 @@ export function rendereKennzahlen(z: Zustand): string {
   const wahl =
     `<p><label>${esc(t("zeitraumVon"))} <input type="date" data-zeitraum="von" value="${esc(z.zeitraum.von)}"></label> ` +
     `<label>${esc(t("zeitraumBis"))} <input type="date" data-zeitraum="bis" value="${esc(z.zeitraum.bis)}"></label></p>`;
-  let inhalt = z.laedt && !k ? `<p>${esc(t("laedt"))}</p>` : "";
+  let inhalt = z.laedt && !k ? `<p role="status">${esc(t("laedt"))}</p>` : "";
   if (k) {
     const kopfDauer = `<th>${esc(t("kennzahlAnzahl"))}</th><th>${esc(t("kennzahlMittel"))}</th><th>${esc(t("kennzahlMedian"))}</th><th>${esc(t("kennzahlMax"))}</th>`;
     const verweil = Object.entries(k.durchlaufzeit)

@@ -97,6 +97,7 @@ describe("Fehlercodes für Phase 1–3", () => {
     "FREIGABE_FEHLT",
     "VERSAND_FEHLGESCHLAGEN",
     "ZU_VIELE_ANFRAGEN",
+    "RATE_LIMIT_UEBERSCHRITTEN",
     "PLAUSIBILITAET_VERLETZT",
     "JOB_VERALTET",
     "BERICHT_FEHLT",
@@ -152,5 +153,20 @@ describe("Schlüssel für Phase 6 und 7", () => {
 
   it("push.aktiv ist standardmäßig aus", () => {
     expect(EINSTELLUNGEN["push.aktiv"].standard).toBe(false);
+  });
+});
+
+describe("zod 4: gespeicherte Werte bleiben gültig", () => {
+  it("jeder Standardwert besteht sein eigenes Schema", () => {
+    for (const k of EINSTELLUNGS_SCHLUESSEL) {
+      const d = EINSTELLUNGEN[k];
+      expect(d.schema.safeParse(d.standard).success, k).toBe(true);
+    }
+  });
+
+  it("übliche Mailadressen und die leere Adresse bleiben gültig", () => {
+    const s = EINSTELLUNGEN["mail.adminEmpfaenger"].schema;
+    expect(s.safeParse(["ankauf@beispiel.de", "a.b+c@sub.beispiel.de"]).success).toBe(true);
+    expect(s.safeParse(["kein-at"]).success).toBe(false);
   });
 });

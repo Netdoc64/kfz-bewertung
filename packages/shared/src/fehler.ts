@@ -68,6 +68,8 @@ export const FEHLER = {
   FREIGABE_FEHLT: { status: 403, schwere: "warnung", wiederholbar: false, text: "Für diese Nachricht fehlt die Freigabe eines Admins." },
   VERSAND_FEHLGESCHLAGEN: { status: 502, schwere: "fehler", wiederholbar: true, text: "Die Nachricht konnte nicht versendet werden." },
   VERSAND_VORLAGE_FEHLT: { status: 500, schwere: "fehler", wiederholbar: false, text: "Für diese Nachricht fehlt eine Vorlage oder ein Wert für einen Platzhalter." },
+  RATE_LIMIT_UEBERSCHRITTEN: { status: 429, schwere: "info", wiederholbar: true, text: "Zu viele Anfragen in kurzer Zeit. Bitte etwas warten und erneut versuchen." },
+  ANFRAGE_ZU_GROSS: { status: 413, schwere: "info", wiederholbar: false, text: "Die Anfrage ist zu groß." },
   ZU_VIELE_ANFRAGEN: { status: 429, schwere: "warnung", wiederholbar: false, text: "Zu viele Anfragen von diesem Absender. Bitte später erneut versuchen." },
   PLAUSIBILITAET_VERLETZT: { status: 422, schwere: "warnung", wiederholbar: false, text: "Das Ergebnis liegt außerhalb der zulässigen Grenzen und wird von einem Menschen geprüft." },
   JOB_VERALTET: { status: 409, schwere: "info", wiederholbar: false, text: "Die Anfrage hat sich geändert; die Bewertung wird neu gestartet." },
@@ -79,6 +81,10 @@ export const FEHLER = {
   CRON_FEHLGESCHLAGEN: { status: 500, schwere: "fehler", wiederholbar: true, text: "Eine zeitgesteuerte Aufgabe ist fehlgeschlagen." },
   ALARM_FEHLGESCHLAGEN: { status: 502, schwere: "kritisch", wiederholbar: true, text: "Der Alarm konnte nicht zugestellt werden." },
   DEAD_LETTER: { status: 500, schwere: "kritisch", wiederholbar: false, text: "Ein Auftrag ist endgültig fehlgeschlagen und wartet auf einen Menschen." },
+
+  // DSGVO
+  DSGVO_OFFENE_ANFRAGE: { status: 409, schwere: "warnung", wiederholbar: false, text: "Zu dieser Person gibt es noch offene Anfragen; die Löschung ist laut Einstellung gesperrt." },
+  DSGVO_LOESCHUNG_FEHLGESCHLAGEN: { status: 500, schwere: "fehler", wiederholbar: true, text: "Die Personendaten konnten nicht vollständig gelöscht werden. Bitte erneut versuchen." },
 
   // Technik
   DATENBANK: { status: 500, schwere: "kritisch", wiederholbar: true, text: "Interner Speicherfehler." },

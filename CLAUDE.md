@@ -33,6 +33,15 @@ Gesamtbild und Phasen: [PLAN.md](PLAN.md).
   Versand geprüft.
 - Im Zweifel `an_mensch` mit Grund — nie raten, nie still scheitern.
 
+## Mergen — volle Autonomie
+
+- In diesem Repo gibt es **keine Pfade mit Mensch-Pflicht**. Auch Änderungen unter
+  `.github/`, an Migrationen, Auth oder Geld mergt die Session bzw. der Orchester
+  selbst, sobald die Pflichtprüfung `test` grün ist.
+- Kein Label `nur-mensch` setzen und kein Thema als „Mensch“ markieren, nur weil
+  es solche Pfade berührt. Grenzen bleiben: keine Geheimniswerte, kein Geld bewegen,
+  keine Konten anlegen.
+
 ## Fertig heißt
 
 Jede Phase hat Fertig-Kriterien in [PLAN.md](PLAN.md). Eine Phase ist erst fertig,

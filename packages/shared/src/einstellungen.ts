@@ -556,6 +556,22 @@ export const EINSTELLUNGEN = {
   ),
   "betrieb.fehlerAufbewahrungTage": def("betrieb", z.number().int().positive(), 90, "Fehlereinträge werden nach dieser Zeit gelöscht."),
   "betrieb.personendatenAufbewahrungTage": def("betrieb", z.number().int().positive(), 365, "Kundendaten abgeschlossener Anfragen werden danach gelöscht (DSGVO)."),
+  "betrieb.dsgvoEinzelloeschungOffeneAnfragen": def(
+    "betrieb",
+    z.enum(["erlauben", "sperren"]),
+    "erlauben",
+    "Sofortige Löschung einer Person (Admin): „sperren“ verweigert sie, solange eine Anfrage der Person noch nicht abgeschlossen ist.",
+  ),
+  "betrieb.dsgvoAuskunftMaxAnfragen": def("betrieb", z.number().int().min(1), 200, "Höchstzahl Anfragen und geparkter Eingänge je Auskunft oder Einzellöschung; darüber wird abgeschnitten gemeldet.", { max: 1000 }),
+
+  // Ratenbegrenzung je Absender (Hash) und Kanal; Fenster fest, Zähler in D1.
+  "ratenlimit.formular.max": def("betrieb", z.number().int().min(1), 10, "Höchstzahl Anfragen je Absender und Fenster am öffentlichen Formular; darüber 429.", { max: 1000 }),
+  "ratenlimit.formular.fensterSekunden": def("betrieb", z.number().int().min(1), 3600, "Länge des Zeitfensters der Ratenbegrenzung am Formular in Sekunden.", { max: 86400 }),
+  "ratenlimit.email.max": def("betrieb", z.number().int().min(1), 20, "Höchstzahl eingehender Mails je Absender und Fenster; darüber wird verworfen, ohne zu antworten.", { max: 1000 }),
+  "ratenlimit.email.fensterSekunden": def("betrieb", z.number().int().min(1), 3600, "Länge des Zeitfensters der Ratenbegrenzung für E-Mail-Eingang in Sekunden.", { max: 86400 }),
+  "ratenlimit.app.max": def("betrieb", z.number().int().min(1), 120, "Höchstzahl Aufrufe der App-API je Absender und Fenster; darüber 429.", { max: 10000 }),
+  "ratenlimit.app.fensterSekunden": def("betrieb", z.number().int().min(1), 60, "Länge des Zeitfensters der Ratenbegrenzung für die App-API in Sekunden.", { max: 86400 }),
+  "sicherheit.bodyMaxBytes": def("betrieb", z.number().int().min(1024), 262144, "Größte erlaubte Länge eines Anfrage-Bodys der API in Bytes; darüber 413.", { max: 5242880 }),
 
   // Eingang
   "eingang.maxJeAbsenderUndTag": def(

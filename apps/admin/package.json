@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "build": "vite build",
     "apk": "node scripts/apk.mjs"
   },
@@ -15,6 +16,8 @@
   "devDependencies": {
     "@capacitor/android": "^8.6.0",
     "@capacitor/cli": "^8.6.0",
+    "axe-core": "^4.14.0",
+    "jsdom": "^29.1.1",
     "vite": "^8.3.5",
     "vitest": "^4.1.0"
   }

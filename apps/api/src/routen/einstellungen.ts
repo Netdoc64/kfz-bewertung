@@ -5,13 +5,13 @@ import type { AppUmgebung } from "../env.js";
 import { ladeLetzteBerichte, pruefeVorschauWert, rechneVorschau } from "../bewertung/vorschau.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 
-const SetzenSchema = z.object({
+export const SetzenSchema = z.object({
   /** `null` setzt auf den Standardwert zurück. */
   wert: z.unknown(),
   version: z.number().int().nonnegative(),
 });
 
-const VorschauSchema = z.object({ wert: z.unknown() });
+export const VorschauSchema = z.object({ wert: z.unknown() });
 
 function schluessel(s: string) {
   if (!istEinstellungsSchluessel(s)) throw new AppFehler("EINSTELLUNG_UNBEKANNT", `Einstellung ${s} gibt es nicht`);
