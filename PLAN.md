@@ -170,10 +170,10 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 
 ### Phase 4 — WhatsApp-Eingang über den Manager
 
-- [ ] Webhook vom Manager mit HMAC + Zeitstempel
+- [x] Webhook vom Manager mit HMAC + Zeitstempel
 - [x] Versand über den Manager mit dessen Regeln; jede gesendete Nachricht als Ereignis gespeichert
 - [x] Bilder (Fahrzeugschein) werden gespeichert und dem Admin gezeigt
-- [ ] Flutschutz je Absender (A9)
+- [x] Flutschutz je Absender (A9)
 
 ### Phase 5 — Echter mobile.de-Zugang · wartet auf Freischaltung
 

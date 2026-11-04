@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import type { AppUmgebung } from "../env.js";
 import { AppFehler } from "../fehler/app-fehler.js";
+import { fehlerSpeichern } from "../fehler/speicher.js";
+import { pruefeRatenlimit } from "../ratelimit/index.js";
 import { NachrichtSchema, pruefeWebhook, verarbeiteWhatsapp } from "../whatsapp/index.js";
 
 const zuGross = () => {
@@ -34,6 +36,15 @@ export const whatsappRouten = new Hono<AppUmgebung>().post(
     }
     const p = NachrichtSchema.safeParse(roh);
     if (!p.success) throw new AppFehler("EINGABE_UNGUELTIG", "Nutzlast ungültig", { details: p.error.issues });
+    // Ratenbegrenzung je Absendernummer (nicht je IP: die kommt immer vom Manager). Über der Grenze wird verworfen
+    // und protokolliert, nie geantwortet; der Manager bekommt 200, damit er nicht wiederholt.
+    try {
+      await pruefeRatenlimit(c.env.DB, einst, "whatsapp", p.data.von);
+    } catch (e) {
+      if (!(e instanceof AppFehler) || e.code !== "RATE_LIMIT_UEBERSCHRITTEN") throw e;
+      await fehlerSpeichern(c.env.DB, { fehler: e, ort: "whatsapp:ratenlimit", korrelationsId: c.get("korrelationsId") }, "info", c.env.EMAIL);
+      return c.json({ ok: true, ergebnis: "verworfen" as const });
+    }
     return c.json({ ok: true, ...(await verarbeiteWhatsapp(c.env, einst, p.data, c.get("korrelationsId"))) });
   },
 );

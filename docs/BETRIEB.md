@@ -248,6 +248,7 @@ Einstellungen und ohne Deploy änderbar:
 |---|---|---|---|---|
 | `formular` | `/api/anfragen` | `ratenlimit.formular.max` / `.fensterSekunden` | 10 je 3600 s | 429 `RATE_LIMIT_UEBERSCHRITTEN`, Header `Retry-After` |
 | `email` | E-Mail-Eingang | `ratenlimit.email.max` / `.fensterSekunden` | 20 je 3600 s | Mail wird verworfen, ohne zu antworten |
+| `whatsapp` | WhatsApp-Webhook, je Absendernummer (gehasht) | `ratenlimit.whatsapp.max` / `.fensterSekunden` | 30 je 3600 s | Nachricht wird verworfen (200 `verworfen`), ohne zu antworten |
 | `app` | `/api/app/*` | `ratenlimit.app.max` / `.fensterSekunden` | 120 je 60 s | 429 `RATE_LIMIT_UEBERSCHRITTEN`, Header `Retry-After` |
 
 Fehlt die Client-IP (lokaler Aufruf, Tests), wird nicht gezählt. Alte Fenster eines Kanals räumt der

@@ -33,7 +33,7 @@ export const NachrichtSchema = z.object({
 export type Nachricht = z.infer<typeof NachrichtSchema>;
 
 export interface Ergebnis {
-  ergebnis: "verarbeitet" | "doppelt";
+  ergebnis: "verarbeitet" | "doppelt" | "verworfen";
 }
 
 interface Besitzer {
