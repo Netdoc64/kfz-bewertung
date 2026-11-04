@@ -1,13 +1,21 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import { AnlegenSchema, legeAn } from "../anfragen/index.js";
 import { managerZugang, type AppUmgebung } from "../env.js";
 import { AppFehler } from "../fehler/app-fehler.js";
+import { pruefeTurnstile } from "../formular/turnstile.js";
+
+/** Body des Formulars: die Anfrage plus das Turnstile-Token der Seite. */
+export const FormularSchema = AnlegenSchema.extend({ turnstileToken: z.string().max(2048).optional() });
 
 /** Öffentliches Formular: legt Anfragen an, ohne Anmeldung. */
 export const formularRouten = new Hono<AppUmgebung>().post("/", async (c) => {
   const roh: unknown = await c.req.json().catch(() => {
     throw new AppFehler("EINGABE_UNGUELTIG", "Kein gültiges JSON");
   });
+  // Zuerst der Bot-Schutz: ein Bot erfährt nichts über die Feldprüfung.
+  const token = typeof roh === "object" && roh !== null ? (roh as Record<string, unknown>).turnstileToken : undefined;
+  await pruefeTurnstile(c.env, token, c.req.header("CF-Connecting-IP"));
   const p = AnlegenSchema.safeParse(roh);
   if (!p.success) throw new AppFehler("EINGABE_UNGUELTIG", undefined, { details: p.error.issues });
 

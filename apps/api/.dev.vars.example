@@ -10,3 +10,5 @@
 # Phase 6/7 — Push (KI_API_SCHLUESSEL siehe oben):
 # PUSH_FCM_PROJEKT=
 # PUSH_FCM_DIENSTKONTO=
+# Phase 9 — Bot-Schutz am Kundenformular (Cloudflare Turnstile; Site-Key steht in der Registry):
+# TURNSTILE_GEHEIMNIS=

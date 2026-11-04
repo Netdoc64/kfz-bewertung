@@ -181,6 +181,10 @@
                   "nachricht": {
                     "type": "string",
                     "maxLength": 5000
+                  },
+                  "turnstileToken": {
+                    "type": "string",
+                    "maxLength": 2048
                   }
                 },
                 "required": [
@@ -192,6 +196,57 @@
             }
           }
         },
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/formular": {
+      "get": {
+        "tags": [
+          "Formular"
+        ],
+        "summary": "Öffentliche Kundenseite mit Formular (Texte, Felder, Datenschutzhinweis aus der Registry)",
+        "description": "Ohne Anmeldung.",
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/formular/formular.js": {
+      "get": {
+        "tags": [
+          "Formular"
+        ],
+        "summary": "Skript der Kundenseite",
+        "description": "Ohne Anmeldung.",
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
+    "/formular/formular.css": {
+      "get": {
+        "tags": [
+          "Formular"
+        ],
+        "summary": "Stylesheet der Kundenseite",
+        "description": "Ohne Anmeldung.",
         "responses": {
           "2XX": {
             "description": "Erfolg"
