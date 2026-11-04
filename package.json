@@ -11,7 +11,8 @@
     "openapi": "npm run openapi -w @kfz/api",
     "test": "npm run test --workspaces --if-present",
     "coverage": "npm run coverage --workspaces --if-present",
-    "dev:api": "npm run dev -w @kfz/api"
+    "dev:api": "npm run dev -w @kfz/api",
+    "einrichten": "npm run einrichten -w @kfz/betrieb"
   },
   "devDependencies": {
     "@vitest/coverage-istanbul": "^4.1.12",
