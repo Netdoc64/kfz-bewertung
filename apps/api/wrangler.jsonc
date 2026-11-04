@@ -26,6 +26,9 @@
   "triggers": { "crons": ["*/15 * * * *"] },
   "send_email": [{ "name": "EMAIL" }],
   "r2_buckets": [{ "binding": "BERICHTE", "bucket_name": "kfz-bewertung-berichte" }],
+  // Admin-Web: Build von apps/admin. run_worker_first = der Worker prüft Access vor jeder Auslieferung.
+  "build": { "command": "npm run build -w @kfz/admin", "cwd": "../.." },
+  "assets": { "directory": "../admin/dist", "binding": "ASSETS", "run_worker_first": true },
   // Oberste Ebene = Produktion. Ein `wrangler deploy` ohne --env ist damit sicher:
   // die Access-Prüfung ist an, und ohne ACCESS_* verweigert der Admin-Bereich.
   "vars": {
@@ -89,7 +92,9 @@
       },
       "triggers": { "crons": ["*/15 * * * *"] },
       "send_email": [{ "name": "EMAIL" }],
-      "r2_buckets": [{ "binding": "BERICHTE", "bucket_name": "kfz-bewertung-berichte-vorschau" }]
+      "r2_buckets": [{ "binding": "BERICHTE", "bucket_name": "kfz-bewertung-berichte-vorschau" }],
+      "build": { "command": "npm run build -w @kfz/admin", "cwd": "../.." },
+      "assets": { "directory": "../admin/dist", "binding": "ASSETS", "run_worker_first": true }
     }
   }
 }

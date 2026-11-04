@@ -19,6 +19,7 @@ import { geraeteRouten } from "./routen/geraete.js";
 import { appRouten } from "./routen/app.js";
 import { whatsappRouten } from "./routen/whatsapp.js";
 import { gesundRouten } from "./gesund/index.js";
+import { adminAssets, istAdminAssetPfad } from "./assets/index.js";
 
 export const app = new Hono<AppUmgebung>()
   .use("*", grundlage)
@@ -49,7 +50,8 @@ app.onError(fehlerBehandlung);
 app.notFound(nichtGefunden);
 
 export default {
-  fetch: app.fetch,
+  // Alles außerhalb von /api und /webhook ist das Admin-Web (hinter Access); der Rest die API.
+  fetch: (anfrage, env, ctx) => (istAdminAssetPfad(new URL(anfrage.url).pathname) ? adminAssets.fetch(anfrage, env, ctx) : app.fetch(anfrage, env, ctx)),
   queue: (batch, env, ctx) => verarbeiteQueue(batch, env, ctx),
   scheduled: (controller, env, ctx) => fuehreCronAus(controller, env, ctx),
   email: (nachricht, env, ctx) => verarbeiteEmail(nachricht, env, ctx),
