@@ -17,6 +17,7 @@ import { einstellungenRouten } from "./routen/einstellungen.js";
 import { fehlerRouten } from "./routen/fehler.js";
 import { geraeteRouten } from "./routen/geraete.js";
 import { appRouten } from "./routen/app.js";
+import { whatsappRouten } from "./routen/whatsapp.js";
 
 export const app = new Hono<AppUmgebung>()
   .use("*", grundlage)
@@ -39,7 +40,8 @@ export const app = new Hono<AppUmgebung>()
   .route("/api/admin/kennzahlen", kennzahlenRouten)
   .route("/api/admin/geraete", geraeteRouten)
   .use("/api/app/*", ratenlimit("app"))
-  .route("/api/app", appRouten);
+  .route("/api/app", appRouten)
+  .route("/webhook/whatsapp", whatsappRouten);
 
 app.onError(fehlerBehandlung);
 app.notFound(nichtGefunden);

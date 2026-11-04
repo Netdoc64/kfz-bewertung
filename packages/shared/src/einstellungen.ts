@@ -649,6 +649,8 @@ export const EINSTELLUNGEN = {
   "versand.manager.wiederholungen": def("betrieb", z.number().int().min(0), 2, "Weitere Versuche nach einem wiederholbaren Managerfehler (mit derselben Korrelation).", { max: 5 }),
   "versand.manager.abstandMs": def("betrieb", z.number().int().min(0), 2_000, "Wartezeit zwischen zwei Versuchen (Millisekunden); ein Retry-After des Managers hat Vorrang, gedeckelt durch versand.manager.abstandMaxMs.", { max: 30_000 }),
   "versand.manager.abstandMaxMs": def("betrieb", z.number().int().min(0), 10_000, "Längste Wartezeit zwischen zwei Versuchen, auch wenn der Manager mehr verlangt (Millisekunden).", { max: 60_000 }),
+  "webhook.manager.toleranzSekunden": def("betrieb", z.number().int().min(1), 300, "Größter erlaubter Abstand des Zeitstempels eines Manager-Webhooks zur eigenen Uhr in Sekunden (Schutz gegen Wiederholung); darüber 401.", { max: 3600 }),
+  "webhook.manager.bodyMaxBytes": def("betrieb", z.number().int().min(1024), 16_000_000, "Größte erlaubte Länge eines Manager-Webhooks in Bytes (Bilder liegen base64 im Body); darüber 413.", { max: 25_000_000 }),
   "mail.absenderAdresse": def("mail", MailAdresseSchema, "", "Absenderadresse für ausgehende Mails."),
   "mail.antwortBetreff": def("mail", z.string().min(1), "Ihre Anfrage", "Betreff automatischer Antworten, wenn die Kundenmail keinen Betreff hatte (sonst „Re: …“)."),
   "mail.eingangsAdresse": def("mail", MailAdresseSchema, "", "Adresse, an die Kunden Anfragen mailen (E-Mail-Eingang)."),

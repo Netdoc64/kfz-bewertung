@@ -44,7 +44,7 @@ dieses Handbuch geschrieben.
 | Name | Zweck | Fehlt er |
 |---|---|---|
 | `MOBILEDE_BENUTZER`, `MOBILEDE_PASSWORT` | mobile.de-Anbindung (vorgesehen) | Mock-Modus (`quelle.mobilede.modus`) |
-| `WEBHOOK_HMAC_SCHLUESSEL` | Webhook-Signatur (vorgesehen) | — |
+| `WEBHOOK_HMAC_SCHLUESSEL` | Signatur des WhatsApp-Webhooks Manager → kfz-bewertung ([manager-webhook.md](manager-webhook.md)) | Webhook weist mit 503 `WEBHOOK_NICHT_KONFIGURIERT` ab, nichts wird verarbeitet |
 | `KI_API_SCHLUESSEL` | KI-Anschluss (nur Auslesen/Formulieren, nie der Preis) | alles läuft ohne KI |
 | `MANAGER_VERSAND_URL`, `MANAGER_VERSAND_HMAC_SCHLUESSEL` | WhatsApp-Versand über den Manager ([manager-versand.md](manager-versand.md)) | kein WhatsApp-Kanal |
 | `PUSH_FCM_PROJEKT`, `PUSH_FCM_DIENSTKONTO` | Push an die App | kein Push |
@@ -53,7 +53,7 @@ Bindings und Variablen im Code: [`apps/api/src/env.ts`](../apps/api/src/env.ts).
 
 ## 2. Migrationen
 
-Dateien: [`apps/api/migrations/`](../apps/api/migrations) (`0001` bis `0012`, D1-Format, fortlaufend).
+Dateien: [`apps/api/migrations/`](../apps/api/migrations) (`0001` bis `0015`, D1-Format, fortlaufend).
 
 | Ziel | Befehl (PowerShell, im Ordner `apps\api`) |
 |---|---|

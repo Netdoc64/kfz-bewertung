@@ -7,6 +7,7 @@ const ZUGANG: Record<Endpunkt["zugang"], string> = {
   oeffentlich: "Ohne Anmeldung.",
   admin: "Nur Admin (Cloudflare Access).",
   geraet: "Nur gekoppeltes Gerät (Geräte-Token).",
+  signatur: "Nur der Business Manager (HMAC-Signatur mit Zeitstempel, Kopfzeilen X-Kfz-Zeitstempel und X-Kfz-Signatur).",
 };
 
 const schema = (s: z.ZodType): Json => {

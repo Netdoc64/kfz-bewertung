@@ -29,6 +29,8 @@ export const FEHLER = {
   KEINE_BERECHTIGUNG: { status: 403, schwere: "warnung", wiederholbar: false, text: "Keine Berechtigung für diese Aktion." },
   NICHT_GEFUNDEN: { status: 404, schwere: "info", wiederholbar: false, text: "Nicht gefunden." },
   SIGNATUR_UNGUELTIG: { status: 401, schwere: "warnung", wiederholbar: false, text: "Signatur der Anfrage ist ungültig." },
+  ZEITSTEMPEL_ABGELAUFEN: { status: 401, schwere: "warnung", wiederholbar: false, text: "Der Zeitstempel der Anfrage liegt außerhalb der erlaubten Toleranz." },
+  WEBHOOK_NICHT_KONFIGURIERT: { status: 503, schwere: "fehler", wiederholbar: true, text: "Der Webhook-Eingang ist nicht eingerichtet." },
 
   // Ablauf
   STATUSWECHSEL_UNZULAESSIG: { status: 409, schwere: "warnung", wiederholbar: false, text: "Dieser Schritt ist im aktuellen Status nicht möglich." },
