@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "einrichten": "node src/einrichten-cli.ts",
+    "rauchtest": "node src/rauchtest-cli.mjs",
     "test": "vitest run",
     "coverage": "vitest run --coverage"
   },
