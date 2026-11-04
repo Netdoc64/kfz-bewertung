@@ -1,0 +1,14 @@
+{
+  "d1_databases": [{ "binding": "DB", "database_id": "11111111-2222-3333-4444-555555555555" }],
+  "vars": { "ACCESS_TEAM_DOMAIN": "team.example", "ACCESS_AUD": "aud-fixture" },
+  "env": {
+    "entwicklung": {
+      "d1_databases": [{ "binding": "DB", "database_id": "00000000-0000-0000-0000-000000000000" }],
+      "vars": { "ACCESS_TEAM_DOMAIN": "", "ACCESS_AUD": "" }
+    },
+    "vorschau": {
+      "d1_databases": [{ "binding": "DB", "database_id": "00000000-0000-0000-0000-000000000000" }],
+      "vars": { "ACCESS_TEAM_DOMAIN": "team.example", "ACCESS_AUD": "" }
+    }
+  }
+}
