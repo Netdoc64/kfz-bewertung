@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import { AktionSchema, AnhaengenSchema, AnlegenSchema, ListeSchema } from "../anfragen/index.js";
+import { FormularSchema } from "../routen/formular.js";
 import { KoppelnSchema, PushTokenSchema } from "../routen/app.js";
 import { KontaktSchema, LoeschSchema } from "../routen/dsgvo.js";
 import { SetzenSchema, VorschauSchema } from "../routen/einstellungen.js";
@@ -25,7 +26,11 @@ const A = "/api/admin";
 /** Alle Routen aus `index.ts`. Der Test `openapi.test.ts` meldet jede, die hier fehlt oder überzählig ist. */
 export const ENDPUNKTE: readonly Endpunkt[] = [
   { methode: "get", pfad: "/api/gesundheit", tag: "System", zusammenfassung: "Gesundheitsprüfung inklusive Datenbank", zugang: "oeffentlich" },
-  { methode: "post", pfad: "/api/anfragen", tag: "Formular", zusammenfassung: "Anfrage aus dem Webformular anlegen", zugang: "oeffentlich", body: AnlegenSchema },
+  { methode: "get", pfad: "/api/gesund", tag: "System", zusammenfassung: "Betriebszustand: D1, Queue, Einstellungsabdruck, Autopilot, Quelle-Modus (ohne Personendaten)", zugang: "oeffentlich" },
+  { methode: "post", pfad: "/api/anfragen", tag: "Formular", zusammenfassung: "Anfrage aus dem Webformular anlegen", zugang: "oeffentlich", body: FormularSchema },
+  { methode: "get", pfad: "/formular", tag: "Formular", zusammenfassung: "Öffentliche Kundenseite mit Formular (Texte, Felder, Datenschutzhinweis aus der Registry)", zugang: "oeffentlich" },
+  { methode: "get", pfad: "/formular/formular.js", tag: "Formular", zusammenfassung: "Skript der Kundenseite", zugang: "oeffentlich" },
+  { methode: "get", pfad: "/formular/formular.css", tag: "Formular", zusammenfassung: "Stylesheet der Kundenseite", zugang: "oeffentlich" },
 
   { methode: "get", pfad: `${A}/einstellungen`, tag: "Einstellungen", zusammenfassung: "Alle Einstellungen mit Wert und Version", zugang: "admin" },
   { methode: "get", pfad: `${A}/einstellungen/:schluessel`, tag: "Einstellungen", zusammenfassung: "Eine Einstellung lesen", zugang: "admin" },

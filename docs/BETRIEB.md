@@ -16,6 +16,11 @@ Konfiguration: [`apps/api/wrangler.jsonc`](../apps/api/wrangler.jsonc).
 |---|---|---|---|
 | **Produktion** (oberste Ebene, ohne `--env`) | `npm run deploy -w @kfz/api` (= `wrangler deploy`) | `UMGEBUNG=produktion`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` | D1 `kfz-bewertung`, Queues `bewertung` / `bewertung-dead-letter`, R2 `kfz-bewertung-berichte`, Cron `*/15 * * * *`, `send_email` `EMAIL` |
 | **entwicklung** (`env.entwicklung`) | `npm run dev -w @kfz/api` (= `wrangler dev --env entwicklung`) | `UMGEBUNG=entwicklung`, Access-Prüfung übersprungen | D1 `kfz-bewertung-dev`, Queues `bewertung-dev` / `bewertung-dead-letter-dev`, R2 `kfz-bewertung-berichte-dev` |
+| **vorschau** (`env.vorschau`) | `wrangler deploy --env vorschau` | `UMGEBUNG=vorschau`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` (Access-Prüfung aktiv wie in Produktion; ohne `ACCESS_*` verweigert der Admin-Bereich) | D1 `kfz-bewertung-vorschau`, Queues `bewertung-vorschau` / `bewertung-dead-letter-vorschau`, R2 `kfz-bewertung-berichte-vorschau`, Cron `*/15 * * * *`, `send_email` `EMAIL` |
+
+Die Vorschau teilt keine Ressource mit Produktion oder entwicklung; ein Test
+(`apps/api/test/vorschau-umgebung.test.ts`) prüft das an `wrangler.jsonc`. Nur `entwicklung`
+überspringt die Access-Prüfung.
 
 Wichtig:
 
@@ -32,8 +37,15 @@ Wichtig:
   `cd apps/api; npx wrangler deploy --dry-run --outdir ..\..\.wrangler\dry` müssen grün sein. Die
   CI führt dasselbe aus ([`ci.yml`](../.github/workflows/ci.yml)).
 - Reihenfolge bei Schemaänderung: **erst Migration auf Remote, dann Deploy** (siehe 2).
-- Gesundheitsprüfung nach dem Deploy: `GET /api/gesundheit` → `{ ok: true, umgebung }`. Die Route
-  fragt auch D1 ab; kommt keine 200, ist die Datenbank nicht erreichbar.
+- Normalerweise deployt [`deploy.yml`](../.github/workflows/deploy.yml): nach grünem `test` auf
+  `main` Platzhalter-Sperre, `wrangler d1 migrations apply --remote`, `wrangler deploy`,
+  Rauchtest; manuell (Vorschau oder Produktion) per `workflow_dispatch`. Ohne Secret
+  `CLOUDFLARE_API_TOKEN` überspringt er alles mit Hinweis. Ersteinrichtung:
+  [STARTKLAR.md](STARTKLAR.md).
+- Gesundheitsprüfung nach dem Deploy: `GET /api/gesund` (D1, Queue, Registry-Abdruck,
+  `autopilot`, `quelleModus`, ohne Personendaten) bzw. `npm run rauchtest -- <url>`.
+  `GET /api/gesundheit` → `{ ok: true, umgebung }` fragt ebenfalls D1 ab; keine 200 heißt:
+  Datenbank nicht erreichbar.
 
 ### Geheimnisse und Standort-Variablen
 

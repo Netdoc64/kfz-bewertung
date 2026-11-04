@@ -8,7 +8,9 @@ export interface Bindings {
   EMAIL: SendEmail;
   /** Berichte und Anhänge. */
   BERICHTE: R2Bucket;
-  UMGEBUNG: "entwicklung" | "produktion";
+  /** Gebautes Admin-Web (statische Assets); nur oben und in der Vorschau gebunden, lokal fehlt es. */
+  ASSETS?: Fetcher;
+  UMGEBUNG: "entwicklung" | "vorschau" | "produktion";
   ACCESS_TEAM_DOMAIN: string;
   ACCESS_AUD: string;
   /** Basis-URL des Business Managers (Standort-Variable); fehlt sie, gibt es keinen WhatsApp-Versand. */
@@ -19,6 +21,8 @@ export interface Bindings {
   WEBHOOK_HMAC_SCHLUESSEL?: string;
   /** API-Schlüssel des KI-Anbieters; fehlt er, läuft alles ohne KI. */
   KI_API_SCHLUESSEL?: string;
+  /** Turnstile-Geheimnis für die Bot-Prüfung am Formular; fehlt es, weisen Produktion und Vorschau ab. */
+  TURNSTILE_GEHEIMNIS?: string;
   /** Firebase-Projekt für Push (Standort-Variable); fehlt es, gibt es keinen Push. */
   PUSH_FCM_PROJEKT?: string;
   /** Dienstkonto-Schlüssel für FCM; verteilt der Business Manager. */

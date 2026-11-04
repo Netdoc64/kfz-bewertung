@@ -32,6 +32,9 @@ export const FEHLER = {
   ZEITSTEMPEL_ABGELAUFEN: { status: 401, schwere: "warnung", wiederholbar: false, text: "Der Zeitstempel der Anfrage liegt außerhalb der erlaubten Toleranz." },
   WEBHOOK_NICHT_KONFIGURIERT: { status: 503, schwere: "fehler", wiederholbar: true, text: "Der Webhook-Eingang ist nicht eingerichtet." },
 
+  BOT_SCHUTZ_ABGELEHNT: { status: 403, schwere: "info", wiederholbar: true, text: "Die Bot-Prüfung wurde nicht bestanden. Bitte die Seite neu laden und erneut versuchen." },
+  BOT_SCHUTZ_NICHT_KONFIGURIERT: { status: 503, schwere: "fehler", wiederholbar: true, text: "Das Formular ist vorübergehend nicht verfügbar." },
+
   // Ablauf
   STATUSWECHSEL_UNZULAESSIG: { status: 409, schwere: "warnung", wiederholbar: false, text: "Dieser Schritt ist im aktuellen Status nicht möglich." },
   VERSION_KONFLIKT: { status: 409, schwere: "info", wiederholbar: false, text: "Der Eintrag wurde zwischenzeitlich geändert. Bitte neu laden." },

@@ -1,0 +1,16 @@
+{
+  "name": "@kfz/betrieb",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "einrichten": "node src/einrichten-cli.ts",
+    "rauchtest": "node src/rauchtest-cli.mjs",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "vitest": "^4.1.0"
+  }
+}

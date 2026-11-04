@@ -102,8 +102,12 @@ export function rendereDetail(z: Zustand): string {
   const bericht = d.bericht
     ? `<iframe sandbox title="${esc(t("bericht"))}" srcdoc="${esc(d.bericht.html)}"></iframe>`
     : `<p>${esc(t("keinBericht"))}</p>`;
+  // Wegen der Produktions-Sperre ohne Bewertung übergeben: deutlich sagen, dass es keine Live-Daten gibt.
+  const keineLive = d.ereignisse.some((e) => e.notiz?.split(",").includes("quelle_mock_produktion"))
+    ? `<p role="alert" class="hinweis-keine-live-daten">${esc(t("hinweis.quelle_mock_produktion"))}</p>`
+    : "";
   return (
-    `${kopf}<h1>${esc(a.kunde_name ?? a.kunde_kontakt ?? a.id)} · ${esc(fahrzeugText(a))}</h1>` +
+    `${kopf}${keineLive}<h1>${esc(a.kunde_name ?? a.kunde_kontakt ?? a.id)} · ${esc(fahrzeugText(a))}</h1>` +
     `<p><span class="status status-${esc(a.status)}">${esc(a.statusText)}</span></p>` +
     `<section><h2>${esc(t("aktionen"))}</h2>${aktionsLeiste(d, t, z.laedt)}</section>` +
     `<section><h2>${esc(t("bericht"))}</h2>${bericht}</section>` +
@@ -274,7 +278,7 @@ export function rendereKennzahlen(z: Zustand): string {
       .map(([status, d]) => `<tr><td>${esc(z.statusNamen[status] ?? status)}</td>${dauerZellen(d, t)}</tr>`)
       .join("");
     const gruende = Object.entries(k.anMensch.gruende)
-      .map(([g, n]) => `<li>${esc(g)}: ${esc(n)}</li>`)
+      .map(([g, n]) => `<li>${esc(g === "quelle_mock_produktion" ? t("hinweis.quelle_mock_produktion") : g)}: ${esc(n)}</li>`)
       .join("");
     const klassen = k.konfidenz.klassen
       .map((c) => `<tr><td>${esc(c.von === null ? `< ${zahl(c.bis)}` : c.bis === null ? `≥ ${zahl(c.von)}` : `${zahl(c.von)}–${zahl(c.bis)}`)}</td><td>${esc(c.anzahl)}</td></tr>`)

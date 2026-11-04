@@ -3,6 +3,7 @@ import { bodyLimit } from "hono/body-limit";
 import type { AppUmgebung } from "../env.js";
 import { fehlerBehandlung } from "../fehler/middleware.js";
 import { AppFehler } from "../fehler/app-fehler.js";
+import { FORMULAR_CSP, istFormularPfad } from "../formular/seite.js";
 
 const KOPFZEILEN: Array<[string, string]> = [
   ["X-Content-Type-Options", "nosniff"],
@@ -22,6 +23,8 @@ export const sicherheitsKopfzeilen: MiddlewareHandler<AppUmgebung> = async (c, n
   await next();
   // Nach dem Handler setzen: das gilt auch für Antworten, die ein Handler selbst als Response baut (Downloads).
   for (const [name, wert] of KOPFZEILEN) c.res.headers.set(name, wert);
+  // Die öffentliche Kundenseite braucht eigene Dateien und das Turnstile-Skript, sonst nichts.
+  if (istFormularPfad(c.req.path)) c.res.headers.set("Content-Security-Policy", FORMULAR_CSP);
 };
 
 /** Begrenzt die Body-Größe aller Schreibaufrufe; die Grenze kommt zur Laufzeit aus der Registry. */

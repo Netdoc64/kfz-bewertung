@@ -1,0 +1,89 @@
+name: Deploy
+
+# Läuft nach grünem CI-Job `test` auf main (Produktion) oder manuell (Standard: Vorschau).
+# Fehlt das Secret CLOUDFLARE_API_TOKEN, überspringt der Lauf alles mit Hinweis und bleibt grün.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      umgebung:
+        description: Ziel-Umgebung (vorschau oder produktion)
+        type: choice
+        options: [vorschau, produktion]
+        default: vorschau
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event.inputs.umgebung || 'produktion' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      UMGEBUNG: ${{ github.event.inputs.umgebung || 'produktion' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      RAUCHTEST_URL_VORSCHAU: ${{ vars.RAUCHTEST_URL_VORSCHAU }}
+      RAUCHTEST_URL_PRODUKTION: ${{ vars.RAUCHTEST_URL_PRODUKTION }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Token prüfen
+        id: token
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::Secret CLOUDFLARE_API_TOKEN ist nicht gesetzt - Deploy übersprungen."
+            echo "gesetzt=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "gesetzt=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.gesetzt == 'true'
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        if: steps.token.outputs.gesetzt == 'true'
+        with:
+          node-version: 24
+          cache: npm
+      - name: Abhängigkeiten
+        if: steps.token.outputs.gesetzt == 'true'
+        run: npm ci
+      - name: Platzhalter-Sperre
+        if: steps.token.outputs.gesetzt == 'true'
+        run: node packages/betrieb/src/platzhalter.mjs "$UMGEBUNG"
+      - name: Migrationen anwenden
+        if: steps.token.outputs.gesetzt == 'true'
+        working-directory: apps/api
+        run: |
+          if [ "$UMGEBUNG" = "vorschau" ]; then
+            npx wrangler d1 migrations apply kfz-bewertung-vorschau --remote --env vorschau
+          else
+            npx wrangler d1 migrations apply kfz-bewertung --remote
+          fi
+      - name: Deploy
+        if: steps.token.outputs.gesetzt == 'true'
+        working-directory: apps/api
+        run: |
+          if [ "$UMGEBUNG" = "vorschau" ]; then
+            npx wrangler deploy --env vorschau
+          else
+            npx wrangler deploy
+          fi
+      - name: Rauchtest
+        if: steps.token.outputs.gesetzt == 'true'
+        run: |
+          if [ "$UMGEBUNG" = "vorschau" ]; then URL="$RAUCHTEST_URL_VORSCHAU"; else URL="$RAUCHTEST_URL_PRODUKTION"; fi
+          if [ -z "$URL" ]; then
+            echo "::notice::Repository-Variable RAUCHTEST_URL_${UMGEBUNG^^} fehlt - Rauchtest übersprungen."
+          else
+            npm run rauchtest -- "$URL"
+          fi

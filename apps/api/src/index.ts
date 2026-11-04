@@ -18,6 +18,9 @@ import { fehlerRouten } from "./routen/fehler.js";
 import { geraeteRouten } from "./routen/geraete.js";
 import { appRouten } from "./routen/app.js";
 import { whatsappRouten } from "./routen/whatsapp.js";
+import { gesundRouten } from "./gesund/index.js";
+import { formularSeite, istFormularPfad } from "./formular/seite.js";
+import { adminAssets, istAdminAssetPfad } from "./assets/index.js";
 
 export const app = new Hono<AppUmgebung>()
   .use("*", grundlage)
@@ -28,8 +31,10 @@ export const app = new Hono<AppUmgebung>()
     await c.env.DB.prepare("SELECT 1").first();
     return c.json({ ok: true, umgebung: c.env.UMGEBUNG });
   })
+  .route("/api/gesund", gesundRouten)
   .use("/api/anfragen", ratenlimit("formular"))
   .route("/api/anfragen", formularRouten)
+  .route("/formular", formularSeite)
   .use("/api/admin/*", adminPflicht)
   .route("/api/admin/einstellungen", einstellungenRouten)
   .route("/api/admin/fehler", fehlerRouten)
@@ -47,7 +52,8 @@ app.onError(fehlerBehandlung);
 app.notFound(nichtGefunden);
 
 export default {
-  fetch: app.fetch,
+  // Alles außerhalb von /api und /webhook ist das Admin-Web (hinter Access); der Rest die API.
+  fetch: (anfrage, env, ctx) => (istAdminAssetPfad(new URL(anfrage.url).pathname) && !istFormularPfad(new URL(anfrage.url).pathname) ? adminAssets.fetch(anfrage, env, ctx) : app.fetch(anfrage, env, ctx)),
   queue: (batch, env, ctx) => verarbeiteQueue(batch, env, ctx),
   scheduled: (controller, env, ctx) => fuehreCronAus(controller, env, ctx),
   email: (nachricht, env, ctx) => verarbeiteEmail(nachricht, env, ctx),

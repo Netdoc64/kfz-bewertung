@@ -26,6 +26,9 @@
   "triggers": { "crons": ["*/15 * * * *"] },
   "send_email": [{ "name": "EMAIL" }],
   "r2_buckets": [{ "binding": "BERICHTE", "bucket_name": "kfz-bewertung-berichte" }],
+  // Admin-Web: Build von apps/admin. run_worker_first = der Worker prüft Access vor jeder Auslieferung.
+  "build": { "command": "npm run build -w @kfz/admin", "cwd": "../.." },
+  "assets": { "directory": "../admin/dist", "binding": "ASSETS", "run_worker_first": true },
   // Oberste Ebene = Produktion. Ein `wrangler deploy` ohne --env ist damit sicher:
   // die Access-Prüfung ist an, und ohne ACCESS_* verweigert der Admin-Bereich.
   "vars": {
@@ -61,6 +64,37 @@
       "triggers": { "crons": ["*/15 * * * *"] },
       "send_email": [{ "name": "EMAIL" }],
       "r2_buckets": [{ "binding": "BERICHTE", "bucket_name": "kfz-bewertung-berichte-dev" }]
+    },
+    // Vorschau: eigene Ressourcen, nichts mit Produktion oder entwicklung geteilt. Die Access-Prüfung
+    // ist aktiv (nur `entwicklung` überspringt sie); ohne ACCESS_* verweigert der Admin-Bereich.
+    "vorschau": {
+      "vars": {
+        "UMGEBUNG": "vorschau",
+        "ACCESS_TEAM_DOMAIN": "",
+        "ACCESS_AUD": ""
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "kfz-bewertung-vorschau",
+          // Platzhalter; echte ID nach `wrangler d1 create kfz-bewertung-vorschau` eintragen (kein Geheimnis).
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "queues": {
+        "producers": [{ "binding": "BEWERTUNG_QUEUE", "queue": "bewertung-vorschau" }],
+        "consumers": [
+          { "queue": "bewertung-vorschau", "max_retries": 3, "dead_letter_queue": "bewertung-dead-letter-vorschau" },
+          // Dead-Letter-Queue hat einen eigenen Consumer, damit Nachrichten sichtbar werden.
+          { "queue": "bewertung-dead-letter-vorschau", "max_retries": 0 }
+        ]
+      },
+      "triggers": { "crons": ["*/15 * * * *"] },
+      "send_email": [{ "name": "EMAIL" }],
+      "r2_buckets": [{ "binding": "BERICHTE", "bucket_name": "kfz-bewertung-berichte-vorschau" }],
+      "build": { "command": "npm run build -w @kfz/admin", "cwd": "../.." },
+      "assets": { "directory": "../admin/dist", "binding": "ASSETS", "run_worker_first": true }
     }
   }
 }
