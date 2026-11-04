@@ -53,7 +53,8 @@ Erfolg `200`:
 { "ok": true, "ergebnis": "verarbeitet" }
 ```
 
-`ergebnis`: `verarbeitet` oder `doppelt` (die `nachrichtId` war schon bekannt, nichts geschehen). Beides gilt
+`ergebnis`: `verarbeitet`, `doppelt` (die `nachrichtId` war schon bekannt, nichts geschehen) oder `verworfen` (Flutschutz: die Nummer
+hat `ratenlimit.whatsapp.max` je Fenster überschritten; nichts gespeichert, keine Antwort an den Kunden). Beides gilt
 für den Manager als zugestellt. Fehler im einheitlichen Fehlerformat von kfz-bewertung
 (`{ "fehler": { "code", "text", "korrelationsId", "wiederholbar" } }`); der Manager wiederholt nur bei `wiederholbar: true`.
 
