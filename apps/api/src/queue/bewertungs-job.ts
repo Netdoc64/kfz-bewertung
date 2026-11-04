@@ -137,6 +137,12 @@ export async function verarbeiteBewertungsJob(
     return "an_mensch";
   }
 
+  // Produktions-Sperre: Beispieldaten dürfen in der Produktion keinen Preis ergeben; im Zweifel an den Menschen.
+  if (abh.env?.UMGEBUNG === "produktion" && (await einstellungen.lese("quelle.mobilede.modus")) === "mock") {
+    await beende("uebergeben", "quelle_mock_produktion");
+    return "an_mensch";
+  }
+
   let bewertung: Bewertung;
   try {
     const suche = abh.suche ?? (await waehleQuelle(einstellungen));
