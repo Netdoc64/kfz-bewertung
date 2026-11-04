@@ -23,6 +23,23 @@
         }
       }
     },
+    "/api/gesund": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Betriebszustand: D1, Queue, Einstellungsabdruck, Autopilot, Quelle-Modus (ohne Personendaten)",
+        "description": "Ohne Anmeldung.",
+        "responses": {
+          "2XX": {
+            "description": "Erfolg"
+          },
+          "default": {
+            "description": "Fehler im einheitlichen Fehlerformat (Code, Nachricht, Korrelations-ID)"
+          }
+        }
+      }
+    },
     "/api/anfragen": {
       "post": {
         "tags": [

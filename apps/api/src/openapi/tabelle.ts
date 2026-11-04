@@ -25,6 +25,7 @@ const A = "/api/admin";
 /** Alle Routen aus `index.ts`. Der Test `openapi.test.ts` meldet jede, die hier fehlt oder überzählig ist. */
 export const ENDPUNKTE: readonly Endpunkt[] = [
   { methode: "get", pfad: "/api/gesundheit", tag: "System", zusammenfassung: "Gesundheitsprüfung inklusive Datenbank", zugang: "oeffentlich" },
+  { methode: "get", pfad: "/api/gesund", tag: "System", zusammenfassung: "Betriebszustand: D1, Queue, Einstellungsabdruck, Autopilot, Quelle-Modus (ohne Personendaten)", zugang: "oeffentlich" },
   { methode: "post", pfad: "/api/anfragen", tag: "Formular", zusammenfassung: "Anfrage aus dem Webformular anlegen", zugang: "oeffentlich", body: AnlegenSchema },
 
   { methode: "get", pfad: `${A}/einstellungen`, tag: "Einstellungen", zusammenfassung: "Alle Einstellungen mit Wert und Version", zugang: "admin" },

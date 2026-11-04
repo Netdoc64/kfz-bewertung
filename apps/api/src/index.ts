@@ -18,6 +18,7 @@ import { fehlerRouten } from "./routen/fehler.js";
 import { geraeteRouten } from "./routen/geraete.js";
 import { appRouten } from "./routen/app.js";
 import { whatsappRouten } from "./routen/whatsapp.js";
+import { gesundRouten } from "./gesund/index.js";
 
 export const app = new Hono<AppUmgebung>()
   .use("*", grundlage)
@@ -28,6 +29,7 @@ export const app = new Hono<AppUmgebung>()
     await c.env.DB.prepare("SELECT 1").first();
     return c.json({ ok: true, umgebung: c.env.UMGEBUNG });
   })
+  .route("/api/gesund", gesundRouten)
   .use("/api/anfragen", ratenlimit("formular"))
   .route("/api/anfragen", formularRouten)
   .use("/api/admin/*", adminPflicht)
