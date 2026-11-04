@@ -60,7 +60,7 @@ describe("parseJsonc", () => {
 describe("leseUmgebungen", () => {
   it("liest Produktion und jede env.* aus der echten wrangler.jsonc, inkl. Dead-Letter", () => {
     const u = leseUmgebungen(echteKonfig);
-    expect(u.map((x) => x.name)).toEqual(["produktion", "entwicklung"]);
+    expect(u.map((x) => x.name)).toEqual(["produktion", "entwicklung", "vorschau"]);
     expect(u[0]!.d1).toEqual(["kfz-bewertung"]);
     expect([...u[0]!.queues].sort()).toEqual(["bewertung", "bewertung-dead-letter"]);
     expect(u[0]!.r2).toEqual(["kfz-bewertung-berichte"]);
@@ -83,14 +83,14 @@ describe("einrichten", () => {
     const a = attrappe();
     const zeilen: string[] = [];
     const erst = await einrichten(echteKonfig, a.ausfuehren, (z) => zeilen.push(z));
-    expect(erst.flatMap((e) => e.angelegt)).toHaveLength(2 * (1 + 2 + 1));
+    expect(erst.flatMap((e) => e.angelegt)).toHaveLength(3 * (1 + 2 + 1));
     expect(zeilen.join("\n")).toContain('"kfz-bewertung" -> database_id "uuid-kfz-bewertung"');
     expect(zeilen.join("\n")).toContain('"kfz-bewertung-dev" -> database_id "uuid-kfz-bewertung-dev"');
 
     const vorher = anlegeAufrufe(a.aufrufe).length;
     const zweit = await einrichten(echteKonfig, a.ausfuehren, () => {});
     expect(zweit.flatMap((e) => e.angelegt)).toEqual([]);
-    expect(zweit.flatMap((e) => e.vorhanden)).toHaveLength(8);
+    expect(zweit.flatMap((e) => e.vorhanden)).toHaveLength(12);
     expect(anlegeAufrufe(a.aufrufe).length).toBe(vorher);
   });
 
