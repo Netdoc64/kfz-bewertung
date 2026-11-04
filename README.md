@@ -60,6 +60,7 @@ Geräte koppeln sich mit einem Kopplungscode und arbeiten danach mit einem Gerä
 | Methode | Pfad | Zweck |
 |---|---|---|
 | GET | `/api/gesundheit` | Lebenszeichen inkl. DB-Prüfung |
+| GET | `/api/gesund` | Betriebszustand: D1, Queue-Binding, Einstellungsabdruck, Autopilot, Quelle-Modus (ohne Personendaten) |
 | GET | `/api/admin/einstellungen` | Alle Einstellungen mit Standard, Version, Quelle, Abdruck |
 | GET | `/api/admin/einstellungen/:schluessel` | Ein Eintrag |
 | PUT | `/api/admin/einstellungen/:schluessel` | `{ wert, version }` setzen, `wert: null` = Standard |
