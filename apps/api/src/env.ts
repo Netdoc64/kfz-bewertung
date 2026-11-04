@@ -21,6 +21,8 @@ export interface Bindings {
   WEBHOOK_HMAC_SCHLUESSEL?: string;
   /** API-Schlüssel des KI-Anbieters; fehlt er, läuft alles ohne KI. */
   KI_API_SCHLUESSEL?: string;
+  /** Turnstile-Geheimnis für die Bot-Prüfung am Formular; fehlt es, weisen Produktion und Vorschau ab. */
+  TURNSTILE_GEHEIMNIS?: string;
   /** Firebase-Projekt für Push (Standort-Variable); fehlt es, gibt es keinen Push. */
   PUSH_FCM_PROJEKT?: string;
   /** Dienstkonto-Schlüssel für FCM; verteilt der Business Manager. */

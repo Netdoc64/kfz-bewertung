@@ -26,7 +26,8 @@ export type EinstellungsGruppe =
   | "mail"
   | "oberflaeche"
   | "app"
-  | "push";
+  | "push"
+  | "formular";
 
 /** Plausibler Bereich eines Zahlenwerts. Außerhalb: Warnung, kein Schemafehler. */
 export interface Plausibilitaet {
@@ -53,6 +54,18 @@ function def<S extends z.ZodTypeAny>(
 }
 
 // --- Teilschemas -----------------------------------------------------------
+
+export const FormularFeldSchema = z.object({
+  /** Pfad im Anfrage-Body, z. B. `name` oder `fahrzeug.marke`. */
+  name: z.string().regex(/^[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z][a-zA-Z0-9]*)?$/),
+  label: z.string().min(1),
+  typ: z.enum(["text", "zahl", "auswahl", "ja_nein", "text_lang"]),
+  pflicht: z.boolean(),
+  hinweis: z.string().optional(),
+  optionen: z.array(z.object({ wert: z.string().min(1), label: z.string().min(1) })).optional(),
+});
+export type FormularFeld = z.infer<typeof FormularFeldSchema>;
+
 
 export const SuchStufeSchema = z.object({
   ezToleranzJahre: z.number().int().min(0),
@@ -575,6 +588,98 @@ export const EINSTELLUNGEN = {
   "ratenlimit.app.max": def("betrieb", z.number().int().min(1), 120, "Höchstzahl Aufrufe der App-API je Absender und Fenster; darüber 429.", { max: 10000 }),
   "ratenlimit.app.fensterSekunden": def("betrieb", z.number().int().min(1), 60, "Länge des Zeitfensters der Ratenbegrenzung für die App-API in Sekunden.", { max: 86400 }),
   "sicherheit.bodyMaxBytes": def("betrieb", z.number().int().min(1024), 262144, "Größte erlaubte Länge eines Anfrage-Bodys der API in Bytes; darüber 413.", { max: 5242880 }),
+
+  // Öffentliches Kundenformular (Seite vom Worker)
+  "formular.texte": def(
+    "formular",
+    z.record(z.string(), z.string()),
+    {
+      seitenTitel: "Fahrzeug bewerten lassen",
+      titel: "Ihr Fahrzeug – unverbindlich bewerten lassen",
+      einleitung: "Bitte füllen Sie das Formular aus. Wir melden uns mit einer Rückfrage oder einem Angebot.",
+      pflichtHinweis: "Pflichtfeld",
+      auswahlLeer: "Bitte wählen",
+      jaLabel: "Ja",
+      neinLabel: "Nein",
+      senden: "Anfrage senden",
+      sendet: "Wird gesendet …",
+      erfolg: "Vielen Dank! Ihre Anfrage ist bei uns eingegangen.",
+      fehler: "Die Anfrage konnte nicht gesendet werden. Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut.",
+      botSchutzFehlt: "Bitte bestätigen Sie, dass Sie kein Roboter sind.",
+      datenschutzUeberschrift: "Datenschutz",
+      kopfzeileSprache: "de",
+    },
+    "Alle Texte und Beschriftungen des öffentlichen Kundenformulars (Seite /formular).",
+  ),
+  "formular.felder": def(
+    "formular",
+    z.array(FormularFeldSchema).min(1),
+    [
+      { name: "name", label: "Ihr Name", typ: "text", pflicht: true },
+      { name: "kontakt", label: "E-Mail oder Telefonnummer", typ: "text", pflicht: true },
+      { name: "fahrzeug.marke", label: "Marke", typ: "text", pflicht: true },
+      { name: "fahrzeug.modell", label: "Modell", typ: "text", pflicht: true },
+      { name: "fahrzeug.variante", label: "Variante", typ: "text", pflicht: false },
+      { name: "fahrzeug.erstzulassung", label: "Erstzulassung", typ: "text", pflicht: false, hinweis: "Format JJJJ-MM, z. B. 2019-04" },
+      { name: "fahrzeug.kilometer", label: "Kilometerstand", typ: "zahl", pflicht: false },
+      {
+        name: "fahrzeug.kraftstoff",
+        label: "Kraftstoff",
+        typ: "auswahl",
+        pflicht: false,
+        optionen: [
+          { wert: "benzin", label: "Benzin" },
+          { wert: "diesel", label: "Diesel" },
+          { wert: "elektro", label: "Elektro" },
+          { wert: "hybrid", label: "Hybrid" },
+          { wert: "plugin_hybrid", label: "Plug-in-Hybrid" },
+          { wert: "lpg", label: "Autogas (LPG)" },
+          { wert: "cng", label: "Erdgas (CNG)" },
+          { wert: "wasserstoff", label: "Wasserstoff" },
+          { wert: "sonstige", label: "Sonstiges" },
+        ],
+      },
+      {
+        name: "fahrzeug.getriebe",
+        label: "Getriebe",
+        typ: "auswahl",
+        pflicht: false,
+        optionen: [
+          { wert: "manuell", label: "Schaltgetriebe" },
+          { wert: "automatik", label: "Automatik" },
+          { wert: "halbautomatik", label: "Halbautomatik" },
+        ],
+      },
+      {
+        name: "fahrzeug.zustand",
+        label: "Zustand",
+        typ: "auswahl",
+        pflicht: false,
+        optionen: [
+          { wert: "unfallfrei", label: "Unfallfrei" },
+          { wert: "repariert", label: "Repariert" },
+          { wert: "beschaedigt", label: "Beschädigt" },
+          { wert: "nicht_fahrbereit", label: "Nicht fahrbereit" },
+        ],
+      },
+      { name: "fahrzeug.scheckheft", label: "Scheckheftgepflegt", typ: "ja_nein", pflicht: false },
+      { name: "kennzeichen", label: "Kennzeichen", typ: "text", pflicht: false },
+      { name: "nachricht", label: "Ihre Nachricht", typ: "text_lang", pflicht: false },
+    ],
+    "Felder des Kundenformulars in Reihenfolge: Pfad im Anfrage-Body, Beschriftung, Typ, Pflicht, Auswahloptionen.",
+  ),
+  "formular.datenschutzhinweis": def(
+    "formular",
+    z.string().min(1),
+    "Wir verarbeiten Ihre Angaben ausschließlich zur Bewertung Ihres Fahrzeugs und zur Kontaktaufnahme mit Ihnen. Auf Anfrage löschen wir Ihre Daten jederzeit. Zum Schutz vor automatisierten Anfragen nutzen wir Cloudflare Turnstile; dabei können technische Angaben Ihres Browsers an Cloudflare übermittelt werden.",
+    "Datenschutzhinweis (A14), der auf dem Kundenformular angezeigt wird.",
+  ),
+  "formular.turnstileSiteKey": def(
+    "formular",
+    z.string(),
+    "",
+    "Öffentlicher Turnstile-Site-Key des Formulars (kein Geheimnis). Leer: kein Widget auf der Seite.",
+  ),
 
   // Eingang
   "eingang.maxJeAbsenderUndTag": def(
