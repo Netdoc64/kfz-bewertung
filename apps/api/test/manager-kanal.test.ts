@@ -39,7 +39,7 @@ async function hmac(schluessel: string, text: string) {
 describe("ManagerKanal", () => {
   it("sendet signiert an /kfz/versand und liefert externeId", async () => {
     const m = mock([json(200, { ok: true, externeId: "wamid.1", zustand: "eingereiht" })]);
-    expect(await m.kanal.sende(n)).toEqual({ externeId: "wamid.1" });
+    expect(await m.kanal.sende(n)).toEqual({ externeId: "wamid.1", zustand: "eingereiht" });
     const a = m.aufrufe[0]!;
     expect(a.url).toBe("https://manager.test/kfz/versand");
     expect(JSON.parse(a.body)).toEqual({ kanal: "whatsapp", an: "+491701234567", text: "Guten Tag", korrelation: "nachricht-1" });
@@ -49,7 +49,7 @@ describe("ManagerKanal", () => {
 
   it("wiederholt bei wiederholbar:true mit derselben Korrelation, Retry-After gedeckelt", async () => {
     const m = mock([fehlerAntwort(429, "FLUTSCHUTZ", true, { "retry-after": "60" }), fehlerAntwort(503, "MANAGER_BUSY", true), json(200, { ok: true, externeId: "w2", zustand: "gesendet" })]);
-    expect(await m.kanal.sende(n)).toEqual({ externeId: "w2" });
+    expect(await m.kanal.sende(n)).toEqual({ externeId: "w2", zustand: "gesendet" });
     expect(m.aufrufe).toHaveLength(3);
     expect(new Set(m.aufrufe.map((a) => JSON.parse(a.body).korrelation))).toEqual(new Set(["nachricht-1"]));
     expect(m.waren).toEqual([500, 100]);
@@ -82,7 +82,7 @@ describe("ManagerKanal", () => {
   it("Netzwerkfehler und Zeitlimit werden wiederholt", async () => {
     const zeit = Object.assign(new Error("t"), { name: "TimeoutError" });
     const m = mock([new TypeError("netz"), zeit, json(200, { ok: true, externeId: "w3", zustand: "gesendet" })]);
-    expect(await m.kanal.sende(n)).toEqual({ externeId: "w3" });
+    expect(await m.kanal.sende(n)).toEqual({ externeId: "w3", zustand: "gesendet" });
     expect(m.aufrufe).toHaveLength(3);
   });
 
@@ -94,7 +94,7 @@ describe("ManagerKanal", () => {
 
   it("5xx ohne lesbare Fehlerform wird wiederholt, 4xx nicht", async () => {
     const m = mock([new Response("boom", { status: 500 }), json(200, { ok: true, zustand: "gesendet" })]);
-    expect(await m.kanal.sende(n)).toEqual({});
+    expect(await m.kanal.sende(n)).toEqual({ zustand: "gesendet" });
     const m2 = mock([new Response("nope", { status: 400 })]);
     await code(m2.kanal.sende(n));
     expect(m2.aufrufe).toHaveLength(1);

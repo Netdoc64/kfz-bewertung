@@ -35,7 +35,7 @@ const eingabe = (extra: Record<string, unknown> = {}, fahrzeug: Record<string, u
 });
 const zeile = (id: string) => env.DB.prepare("SELECT * FROM anfragen WHERE id = ?1").bind(id).first<Record<string, unknown>>();
 const ereignisse = async (id: string) =>
-  (await env.DB.prepare("SELECT aktion, status_von, status_nach, durch FROM anfrage_ereignisse WHERE anfrage_id = ?1 ORDER BY id").bind(id).all()).results;
+  (await env.DB.prepare("SELECT aktion, status_von, status_nach, durch FROM anfrage_ereignisse WHERE anfrage_id = ?1 AND aktion != 'nachricht_gesendet' ORDER BY id").bind(id).all()).results;
 const code = async (r: Response) => ((await r.json()) as { fehler: { code: string } }).fehler.code;
 
 beforeEach(async () => {
