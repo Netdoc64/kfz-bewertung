@@ -11,6 +11,10 @@ Regeln für Änderungen: [CLAUDE.md](CLAUDE.md).
 | `packages/shared` | Fehlerkatalog, Einstellungs-Registry, Fahrzeugschema, Statusmaschine, KI-Port |
 | `apps/api` | Cloudflare Worker (Hono, D1) |
 
+## Startklar machen
+
+Vom Repo zum ersten echten Betrieb (Cloudflare, Access, Schlüssel, Deploy, Autopilot): [docs/STARTKLAR.md](docs/STARTKLAR.md). Betrieb danach: [docs/BETRIEB.md](docs/BETRIEB.md).
+
 ## Lokal
 
 ```powershell
