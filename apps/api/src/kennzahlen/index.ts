@@ -182,6 +182,7 @@ export async function ladeKennzahlen(db: D1Database, zeitraum: Zeitraum, grenzen
            SELECT anfrage_id, aktion, status_von, status_nach, durch, notiz, am,
                   LEAD(am) OVER (PARTITION BY anfrage_id ORDER BY id) AS naechste
            FROM anfrage_ereignisse
+           WHERE aktion != 'nachricht_gesendet'
          ) WHERE am >= ?1 AND am < ?2 ORDER BY am`,
       )
       .bind(zeitraum.von, zeitraum.bis)

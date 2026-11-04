@@ -3,7 +3,7 @@ import { AppFehler } from "../fehler/app-fehler.js";
 import type { Kanal } from "./kanal.js";
 
 export { ManagerKanal, alsE164, type ManagerZugang, type ManagerRegeln } from "./manager.js";
-export { MockKanal, type AusgehendeNachricht, type Kanal } from "./kanal.js";
+export { MockKanal, type AusgehendeNachricht, type Kanal, type Versandquittung } from "./kanal.js";
 
 /** Status, ab denen ein Admin die Bewertung freigegeben hat (Statusmaschine, keine Fachzahl). */
 const FREIGEGEBEN = ["freigegeben", "angebot_versendet", "verhandlung", "besichtigung"];
@@ -94,11 +94,11 @@ export async function sende(db: D1Database, einstellungen: Einstellungen, a: Ver
 
   const { abdruck } = await einstellungen.abdruck();
   const id = crypto.randomUUID();
-  const speichern = (status: "gesendet" | "geparkt" | "fehlgeschlagen", extra: { externeId?: string; fehlerCode?: string } = {}) =>
+  const speichern = (status: "gesendet" | "geparkt" | "fehlgeschlagen", extra: { externeId?: string; zustand?: string; fehlerCode?: string } = {}) =>
     db
       .prepare(
-        `INSERT INTO nachrichten (id, anfrage_id, kontakt, kanal, anlass, vorlage, sprache, inhalt, status, datenschutz_angehaengt, autopilot, einstellungs_abdruck, korrelation, externe_id, fehler_code, schluessel)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)`,
+        `INSERT INTO nachrichten (id, anfrage_id, kontakt, kanal, anlass, vorlage, sprache, inhalt, status, datenschutz_angehaengt, autopilot, einstellungs_abdruck, korrelation, externe_id, fehler_code, schluessel, zustand)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)`,
       )
       .bind(
         id,
@@ -117,8 +117,20 @@ export async function sende(db: D1Database, einstellungen: Einstellungen, a: Ver
         extra.externeId ?? null,
         extra.fehlerCode ?? null,
         status === "gesendet" ? (a.schluessel ?? null) : null,
+        extra.zustand ?? null,
       )
       .run();
+
+  // Jede gesendete Nachricht ist ein Ereignis der Anfrage, aber kein Statuswechsel; die Notiz nennt nur Anlass und Kanal, nie Text oder Nummer.
+  const ereignis = async () => {
+    if (!a.anfrageId) return;
+    await db
+      .prepare(
+        "INSERT INTO anfrage_ereignisse (anfrage_id, aktion, status_von, status_nach, durch, notiz, korrelation) SELECT id, 'nachricht_gesendet', status, status, 'system', ?2, ?3 FROM anfragen WHERE id = ?1",
+      )
+      .bind(a.anfrageId, `${a.anlass}/${a.kanal.name}`, a.korrelation)
+      .run();
+  };
 
   if (autopilot !== "an") {
     await speichern("geparkt");
@@ -128,7 +140,8 @@ export async function sende(db: D1Database, einstellungen: Einstellungen, a: Ver
 
   try {
     const r = await a.kanal.sende({ an: a.an, text: inhalt, korrelation: a.korrelation });
-    await speichern("gesendet", { externeId: r.externeId });
+    await speichern("gesendet", { externeId: r.externeId, zustand: r.zustand });
+    await ereignis();
   } catch (e) {
     await speichern("fehlgeschlagen", { fehlerCode: "VERSAND_FEHLGESCHLAGEN" });
     throw new AppFehler("VERSAND_FEHLGESCHLAGEN", undefined, { ursache: e, kontext: { anlass: a.anlass, kanal: a.kanal.name } });

@@ -5,11 +5,17 @@ export interface AusgehendeNachricht {
   korrelation: string;
 }
 
+/** Antwort eines Kanals; `zustand` nur, wo der Kanal ihn quittiert (Manager: gesendet, eingereiht). */
+export interface Versandquittung {
+  externeId?: string;
+  zustand?: string;
+}
+
 export interface Kanal {
   /** Name, wie er in `nachrichten.kanal` steht. */
   readonly name: string;
   /** Wirft bei Fehlern; der Port macht daraus VERSAND_FEHLGESCHLAGEN. */
-  sende(nachricht: AusgehendeNachricht): Promise<{ externeId?: string }>;
+  sende(nachricht: AusgehendeNachricht): Promise<Versandquittung>;
 }
 
 /** Test-Kanal: merkt sich alles, sendet nichts. */
@@ -19,7 +25,7 @@ export class MockKanal implements Kanal {
 
   constructor(readonly name = "mock") {}
 
-  async sende(nachricht: AusgehendeNachricht): Promise<{ externeId?: string }> {
+  async sende(nachricht: AusgehendeNachricht): Promise<Versandquittung> {
     if (this.fehler) throw this.fehler;
     this.gesendet.push(nachricht);
     return { externeId: `mock-${this.gesendet.length}` };

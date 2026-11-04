@@ -1,5 +1,5 @@
 import { AppFehler } from "../fehler/app-fehler.js";
-import type { AusgehendeNachricht, Kanal } from "./kanal.js";
+import type { AusgehendeNachricht, Kanal, Versandquittung } from "./kanal.js";
 
 /** Zugang zum Business Manager (Standort-Variable und Geheimnis; Werte verteilt der Manager). */
 export interface ManagerZugang {
@@ -57,7 +57,7 @@ export class ManagerKanal implements Kanal {
     private readonly dep: ManagerAbhaengigkeiten = {},
   ) {}
 
-  async sende(n: AusgehendeNachricht): Promise<{ externeId?: string }> {
+  async sende(n: AusgehendeNachricht): Promise<Versandquittung> {
     const an = alsE164(n.an);
     if (!an) throw new AppFehler("VERSAND_FEHLGESCHLAGEN", "Empfänger keine gültige Nummer", { kontext: { grund: "nummer_ungueltig" } });
     const koerper = JSON.stringify({ kanal: "whatsapp", an, text: n.text, korrelation: n.korrelation });
@@ -76,7 +76,7 @@ export class ManagerKanal implements Kanal {
   }
 
   private async einmal(koerper: string): Promise<
-    | { ok: true; antwort: { externeId?: string } }
+    | { ok: true; antwort: Versandquittung }
     | { ok: false; code: string; http: number; wiederholbar: boolean; warteMs?: number }
   > {
     const zeitstempel = String((this.dep.jetztSekunden ?? (() => Math.floor(Date.now() / 1000)))());
@@ -101,7 +101,10 @@ export class ManagerKanal implements Kanal {
     } catch {
       json = null;
     }
-    if (res.ok && json?.ok === true) return { ok: true, antwort: json.externeId ? { externeId: json.externeId } : {} };
+    if (res.ok && json?.ok === true) return {
+        ok: true,
+        antwort: { ...(json.externeId ? { externeId: json.externeId } : {}), ...(typeof json.zustand === "string" ? { zustand: json.zustand } : {}) },
+      };
     if (res.ok) return { ok: false, code: "antwort_unlesbar", http: res.status, wiederholbar: false };
 
     const retryAfter = Number(res.headers.get("retry-after"));

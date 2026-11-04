@@ -15,6 +15,8 @@ export interface Bindings {
   MANAGER_VERSAND_URL?: string;
   /** HMAC-Geheimnis kfz-bewertung → Manager; verteilt der Business Manager. */
   MANAGER_VERSAND_HMAC_SCHLUESSEL?: string;
+  /** HMAC-Geheimnis Manager → kfz-bewertung (WhatsApp-Eingang); fehlt es, weist die Route ab. */
+  WEBHOOK_HMAC_SCHLUESSEL?: string;
   /** API-Schlüssel des KI-Anbieters; fehlt er, läuft alles ohne KI. */
   KI_API_SCHLUESSEL?: string;
   /** Firebase-Projekt für Push (Standort-Variable); fehlt es, gibt es keinen Push. */

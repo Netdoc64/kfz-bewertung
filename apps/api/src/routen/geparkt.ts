@@ -49,7 +49,7 @@ async function anhaenge(db: D1Database, geparktId: string): Promise<AnhangZeile[
 export const MailFreigabeSchema = AnlegenSchema.pick({ name: true, fahrzeug: true, kennzeichen: true }).partial({ name: true });
 
 /** Gründe, bei denen die Nutzlast eine Mail ohne Fahrzeugangaben ist; der Admin ergänzt sie beim Freigeben. */
-const MAIL_GRUENDE = new Set(["mail_unklar", "ki_sonstiges", "ki_rueckfrage_unzuordenbar"]);
+const MAIL_GRUENDE = new Set(["mail_unklar", "ki_sonstiges", "ki_rueckfrage_unzuordenbar", "whatsapp_unklar"]);
 
 function ansicht(z: Zeile) {
   let nutzlast: unknown = null;
@@ -104,7 +104,7 @@ export const geparktRouten = new Hono<AppUmgebung>()
     const nutzlast = ansicht(z).nutzlast;
     let kandidat = nutzlast;
     if (MAIL_GRUENDE.has(z.grund)) {
-      // Die Mail trägt keine Fahrzeugangaben; der Admin ergänzt sie beim Freigeben.
+      // Mail und WhatsApp-Nachricht tragen keine Fahrzeugangaben; der Admin ergänzt sie beim Freigeben.
       const roh = await c.req.json().catch(() => ({}));
       const m = MailFreigabeSchema.safeParse(roh);
       if (!m.success) throw new AppFehler("EINGABE_UNGUELTIG", "Fahrzeugangaben fehlen oder sind ungültig", { details: m.error.issues });
@@ -129,6 +129,7 @@ export const geparktRouten = new Hono<AppUmgebung>()
         // Anhänge und Mail-Zuordnung wandern mit: Antworten auf die Mail finden die Anfrage.
         c.env.DB.prepare("UPDATE email_anhaenge SET anfrage_id = ?2, geparkt_id = NULL WHERE geparkt_id = ?1").bind(z.id, r.id),
         c.env.DB.prepare("UPDATE email_eingang SET anfrage_id = ?2, geparkt_id = NULL WHERE geparkt_id = ?1").bind(z.id, r.id),
+        c.env.DB.prepare("UPDATE whatsapp_eingang SET anfrage_id = ?2, geparkt_id = NULL WHERE geparkt_id = ?1").bind(z.id, r.id),
       ]);
       return c.json(r, 201);
     } catch (e) {

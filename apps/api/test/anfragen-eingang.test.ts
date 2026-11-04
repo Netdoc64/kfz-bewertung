@@ -35,7 +35,7 @@ const eingabe = (extra: Record<string, unknown> = {}, fahrzeug: Record<string, u
 });
 const zeile = (id: string) => env.DB.prepare("SELECT * FROM anfragen WHERE id = ?1").bind(id).first<Record<string, unknown>>();
 const ereignisse = async (id: string) =>
-  (await env.DB.prepare("SELECT aktion, status_von, status_nach, durch FROM anfrage_ereignisse WHERE anfrage_id = ?1 ORDER BY id").bind(id).all()).results;
+  (await env.DB.prepare("SELECT aktion, status_von, status_nach, durch FROM anfrage_ereignisse WHERE anfrage_id = ?1 AND aktion != 'nachricht_gesendet' ORDER BY id").bind(id).all()).results;
 const code = async (r: Response) => ((await r.json()) as { fehler: { code: string } }).fehler.code;
 
 beforeEach(async () => {
@@ -353,5 +353,19 @@ describe("Admin-Ansicht geparkter Eingänge", () => {
       expect(await env.DB.prepare("SELECT anfrage_id, geparkt_id FROM email_anhaenge").first()).toEqual({ anfrage_id: a.id, geparkt_id: null });
       expect(await env.DB.prepare("SELECT anfrage_id, geparkt_id FROM email_eingang").first()).toEqual({ anfrage_id: a.id, geparkt_id: null });
     });
+  });
+
+  it("whatsapp_unklar: Freigabe mit Fahrzeugangaben legt die Anfrage an und hängt whatsapp_eingang um", async () => {
+    const id = crypto.randomUUID();
+    await env.DB.prepare("INSERT INTO eingang_geparkt (id, kontakt, kanal, nutzlast, grund, korrelation) VALUES (?1, '491701234567', 'whatsapp', ?2, 'whatsapp_unklar', 'k')")
+      .bind(id, JSON.stringify({ name: "Bernd", text: "Bitte bewerten", nachrichtId: "w1" }))
+      .run();
+    await env.DB.prepare("INSERT INTO whatsapp_eingang (nachricht_id, geparkt_id) VALUES ('w1', ?1)").bind(id).run();
+    const leer = await app.request(`http://lokal/api/admin/geparkt/${id}/freigeben`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }, testEnv());
+    expect(await code(leer)).toBe("EINGABE_UNGUELTIG");
+    const r = await app.request(`http://lokal/api/admin/geparkt/${id}/freigeben`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ fahrzeug: vollstaendig }) }, testEnv());
+    expect(r.status).toBe(201);
+    const a = (await r.json()) as { id: string };
+    expect(await env.DB.prepare("SELECT anfrage_id, geparkt_id FROM whatsapp_eingang").first()).toEqual({ anfrage_id: a.id, geparkt_id: null });
   });
 });

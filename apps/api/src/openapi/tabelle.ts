@@ -6,6 +6,7 @@ import { SetzenSchema, VorschauSchema } from "../routen/einstellungen.js";
 import { FilterSchema as FehlerFilterSchema } from "../routen/fehler.js";
 import { MailFreigabeSchema } from "../routen/geparkt.js";
 import { FilterSchema as KennzahlenFilterSchema } from "../routen/kennzahlen.js";
+import { NachrichtSchema as WhatsappNachrichtSchema } from "../whatsapp/index.js";
 
 export interface Endpunkt {
   methode: "get" | "post" | "put";
@@ -14,7 +15,7 @@ export interface Endpunkt {
   tag: string;
   zusammenfassung: string;
   /** Wer ruft auf: offen (Formular), Cloudflare Access (Admin) oder gekoppeltes Gerät (App). */
-  zugang: "oeffentlich" | "admin" | "geraet";
+  zugang: "oeffentlich" | "admin" | "geraet" | "signatur";
   query?: z.ZodType;
   body?: z.ZodType;
 }
@@ -57,6 +58,8 @@ export const ENDPUNKTE: readonly Endpunkt[] = [
   { methode: "post", pfad: `${A}/dsgvo/loeschung`, tag: "DSGVO", zusammenfassung: "Personendaten löschen (Art. 17)", zugang: "admin", body: LoeschSchema },
 
   { methode: "get", pfad: `${A}/kennzahlen`, tag: "Kennzahlen", zusammenfassung: "Kennzahlen für einen Zeitraum", zugang: "admin", query: KennzahlenFilterSchema },
+
+  { methode: "post", pfad: "/webhook/whatsapp", tag: "Webhook", zusammenfassung: "Eingehende WhatsApp-Nachricht vom Business Manager", zugang: "signatur", body: WhatsappNachrichtSchema },
 
   { methode: "get", pfad: `${A}/geraete`, tag: "Geräte", zusammenfassung: "Gekoppelte Geräte auflisten", zugang: "admin" },
   { methode: "post", pfad: `${A}/geraete/kopplungscode`, tag: "Geräte", zusammenfassung: "Kopplungscode erzeugen", zugang: "admin" },

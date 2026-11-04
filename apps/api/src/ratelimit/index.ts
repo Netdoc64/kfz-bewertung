@@ -4,11 +4,12 @@ import type { Einstellungen } from "../einstellungen/dienst.js";
 import type { AppUmgebung } from "../env.js";
 import { AppFehler } from "../fehler/app-fehler.js";
 
-export type RatenKanal = "formular" | "email" | "app";
+export type RatenKanal = "formular" | "email" | "app" | "whatsapp";
 
 const GRENZE: Record<RatenKanal, { max: EinstellungsSchluessel; fenster: EinstellungsSchluessel }> = {
   formular: { max: "ratenlimit.formular.max", fenster: "ratenlimit.formular.fensterSekunden" },
   email: { max: "ratenlimit.email.max", fenster: "ratenlimit.email.fensterSekunden" },
+  whatsapp: { max: "ratenlimit.whatsapp.max", fenster: "ratenlimit.whatsapp.fensterSekunden" },
   app: { max: "ratenlimit.app.max", fenster: "ratenlimit.app.fensterSekunden" },
 };
 
