@@ -364,6 +364,7 @@ export const EINSTELLUNGEN = {
       nachrichten: "Nachrichten an den Kunden",
       kundenNachrichten: "Nachrichten vom Kunden",
       notiz: "Notiz (optional)",
+      "hinweis.quelle_mock_produktion": "Keine Live-Daten: In der Produktion ist nur die Beispieldaten-Quelle eingestellt. Es wurde nicht bewertet und kein Preis erzeugt.",
       aktionen: "Aktionen",
       keineAktionen: "Keine Aktion möglich.",
       konflikt: "Die Anfrage wurde zwischenzeitlich geändert und wurde neu geladen.",
