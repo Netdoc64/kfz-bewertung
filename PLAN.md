@@ -171,7 +171,7 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 ### Phase 4 — WhatsApp-Eingang über den Manager
 
 - [ ] Webhook vom Manager mit HMAC + Zeitstempel
-- [ ] Versand über den Manager mit dessen Regeln; jede gesendete Nachricht als Ereignis gespeichert
+- [x] Versand über den Manager mit dessen Regeln; jede gesendete Nachricht als Ereignis gespeichert
 - [x] Bilder (Fahrzeugschein) werden gespeichert und dem Admin gezeigt
 - [ ] Flutschutz je Absender (A9)
 
