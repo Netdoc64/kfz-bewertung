@@ -8,7 +8,7 @@ export interface Bindings {
   EMAIL: SendEmail;
   /** Berichte und Anhänge. */
   BERICHTE: R2Bucket;
-  UMGEBUNG: "entwicklung" | "produktion";
+  UMGEBUNG: "entwicklung" | "vorschau" | "produktion";
   ACCESS_TEAM_DOMAIN: string;
   ACCESS_AUD: string;
   /** Basis-URL des Business Managers (Standort-Variable); fehlt sie, gibt es keinen WhatsApp-Versand. */
