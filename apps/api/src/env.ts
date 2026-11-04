@@ -8,6 +8,8 @@ export interface Bindings {
   EMAIL: SendEmail;
   /** Berichte und Anhänge. */
   BERICHTE: R2Bucket;
+  /** Gebautes Admin-Web (statische Assets); nur oben und in der Vorschau gebunden, lokal fehlt es. */
+  ASSETS?: Fetcher;
   UMGEBUNG: "entwicklung" | "vorschau" | "produktion";
   ACCESS_TEAM_DOMAIN: string;
   ACCESS_AUD: string;
