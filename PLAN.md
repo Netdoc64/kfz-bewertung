@@ -217,15 +217,15 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 
 ### Phase 9 — Startklar
 
-- [ ] Deploy-Workflow `.github/workflows/deploy.yml`: nach grünem `test` auf `main` erst `wrangler d1 migrations apply --remote`, dann `wrangler deploy`; ohne Secret `CLOUDFLARE_API_TOKEN` überspringt er sauber mit Hinweis; manueller Start für die Vorschau-Umgebung
-- [ ] `npm run einrichten`: legt D1, Queues und R2 je Umgebung idempotent über wrangler an und gibt die IDs aus; Test mit wrangler-Attrappe
-- [ ] Sperre gegen Platzhalter: Deploy bricht ab, solange in `wrangler.jsonc` eine Null-ID oder leere `ACCESS_*`-Werte für Produktion stehen; Test
-- [ ] Produktions-Sperre: bei `UMGEBUNG=produktion` und `quelle.mobilede.modus=mock` entsteht kein Preis — Anfrage geht mit Grund an `an_mensch`, Admin zeigt einen Hinweis „keine Live-Daten“; Test
-- [ ] Admin-Web wird vom Worker als statische Assets ausgeliefert (hinter Cloudflare Access), Build im Bündel geprüft
-- [ ] Kundenformular als Seite vom Worker: Texte und Felder aus der Registry, Datenschutzhinweis (A14), Bot-Schutz über Turnstile (Schlüsselname in `.dev.vars.example`, Testschlüssel in Tests)
-- [ ] Gesundheits-Route `/api/gesund` (D1, Queue, Registry-Abdruck, Autopilot, Quelle-Modus — ohne Personendaten) und `npm run rauchtest -- <url>` für nach dem Deploy
-- [ ] Vorschau-Umgebung `env.vorschau` in `wrangler.jsonc` mit eigenen Ressourcen, Access an
-- [ ] `docs/STARTKLAR.md`: jeder menschliche Schritt in Reihenfolge (Cloudflare-Konto, `npm run einrichten`, IDs eintragen, Access-App, Email Routing, Schlüssel über den Business Manager, GitHub-Secret, Manager-Endpunkt, mobile.de, erster Start mit Autopilot aus, dann an), jeder mit Prüfbefehl; README verweist darauf
+- [x] Deploy-Workflow `.github/workflows/deploy.yml`: nach grünem `test` auf `main` erst `wrangler d1 migrations apply --remote`, dann `wrangler deploy`; ohne Secret `CLOUDFLARE_API_TOKEN` überspringt er sauber mit Hinweis; manueller Start für die Vorschau-Umgebung
+- [x] `npm run einrichten`: legt D1, Queues und R2 je Umgebung idempotent über wrangler an und gibt die IDs aus; Test mit wrangler-Attrappe
+- [x] Sperre gegen Platzhalter: Deploy bricht ab, solange in `wrangler.jsonc` eine Null-ID oder leere `ACCESS_*`-Werte für Produktion stehen; Test
+- [x] Produktions-Sperre: bei `UMGEBUNG=produktion` und `quelle.mobilede.modus=mock` entsteht kein Preis — Anfrage geht mit Grund an `an_mensch`, Admin zeigt einen Hinweis „keine Live-Daten“; Test
+- [x] Admin-Web wird vom Worker als statische Assets ausgeliefert (hinter Cloudflare Access), Build im Bündel geprüft
+- [x] Kundenformular als Seite vom Worker: Texte und Felder aus der Registry, Datenschutzhinweis (A14), Bot-Schutz über Turnstile (Schlüsselname in `.dev.vars.example`, Testschlüssel in Tests)
+- [x] Gesundheits-Route `/api/gesund` (D1, Queue, Registry-Abdruck, Autopilot, Quelle-Modus — ohne Personendaten) und `npm run rauchtest -- <url>` für nach dem Deploy
+- [x] Vorschau-Umgebung `env.vorschau` in `wrangler.jsonc` mit eigenen Ressourcen, Access an
+- [x] `docs/STARTKLAR.md`: jeder menschliche Schritt in Reihenfolge (Cloudflare-Konto, `npm run einrichten`, IDs eintragen, Access-App, Email Routing, Schlüssel über den Business Manager, GitHub-Secret, Manager-Endpunkt, mobile.de, erster Start mit Autopilot aus, dann an), jeder mit Prüfbefehl; README verweist darauf
 
 ## Braucht einen Menschen
 
