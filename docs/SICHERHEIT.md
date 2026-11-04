@@ -2,7 +2,7 @@
 
 Geprüft: alle Routen aus `apps/api/src/index.ts` — öffentlich (`/api/anfragen`, `/api/gesundheit`),
 Admin (`/api/admin/*` hinter Cloudflare Access), App (`/api/app/*` mit Geräte-Token) — sowie der
-E-Mail-Eingang, der Queue-Eingang und der Cron. Inventar der Endpunkte: [openapi.json](openapi.json)
+WhatsApp-Webhook (`/webhook/whatsapp`), der E-Mail-Eingang, der Queue-Eingang und der Cron. Inventar der Endpunkte: [openapi.json](openapi.json)
 (`npm run openapi`, die CI prüft die Aktualität).
 
 Stand je Befund: **behoben** (mit Test), **akzeptiert** (mit Begründung) oder **offen**.
@@ -30,6 +30,7 @@ Tests liegen in `apps/api/test/sicherheit-*.test.ts`.
 | S16 | API9 Inventar | Undokumentierte Endpunkte | in Ordnung | `docs/openapi.json` wird aus den Routen und zod-Schemas erzeugt, ein Test bricht bei Abweichung; unbekannte Pfade ergeben 404 | `openapi` |
 | S17 | API10 Unsichere Fremd-APIs | Antworten von Manager, KI und FCM | in Ordnung | KI nur für Auslesen/Formulieren, nie für den Preis; Antworten werden gegen Schemas geprüft, Mail-Text wird nie als Anweisung ausgeführt; Manager-Aufrufe sind HMAC-signiert | `ki-injection`, `versand` |
 | S18 | Queue-/Cron-Eingang | Manipulierte Queue-Nachrichten | in Ordnung | Queue und Cron sind nur intern erreichbar (kein HTTP); Jobs tragen die Generation und werden bei Abweichung verworfen | `bewertungs-job`, `dead-letter` |
+| S19 | API2 Broken Authentication | WhatsApp-Webhook `/webhook/whatsapp` (Manager → kfz-bewertung) ist ohne Login erreichbar | in Ordnung | HMAC-SHA256 über `{zeitstempel}.{rohkörper}` mit `WEBHOOK_HMAC_SCHLUESSEL`, geprüft mit `crypto.subtle.verify` (konstantzeitig); Zeitstempel höchstens `webhook.manager.toleranzSekunden` von der eigenen Uhr entfernt (`ZEITSTEMPEL_ABGELAUFEN`), Wiederholung derselben `nachrichtId` verarbeitet nichts (Tabelle `whatsapp_eingang`); fehlt der Schlüssel, weist die Route mit `WEBHOOK_NICHT_KONFIGURIERT` (503) ab; Body-Grenze `webhook.manager.bodyMaxBytes`; Antworten nur über die Versand-Pipeline (Not-Aus, kein Preis ohne Freigabe) | `whatsapp-webhook` |
 
 ## Offen
 
