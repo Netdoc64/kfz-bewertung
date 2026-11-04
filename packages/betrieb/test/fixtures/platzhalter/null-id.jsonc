@@ -1,0 +1,5 @@
+{
+  // Fixture: Null-ID
+  "d1_databases": [{ "binding": "DB", "database_id": "00000000-0000-0000-0000-000000000000" }],
+  "vars": { "ACCESS_TEAM_DOMAIN": "team.example", "ACCESS_AUD": "aud-fixture" },
+}
