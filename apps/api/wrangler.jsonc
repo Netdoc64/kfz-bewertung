@@ -9,8 +9,8 @@
     {
       "binding": "DB",
       "database_name": "kfz-bewertung",
-      // Echte ID nach `wrangler d1 create kfz-bewertung` eintragen (kein Geheimnis).
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // Aus `npm run einrichten` (kein Geheimnis).
+      "database_id": "b34cf1bb-1688-47f3-839f-5daa02594cf7",
       "migrations_dir": "migrations"
     }
   ],
@@ -48,7 +48,7 @@
         {
           "binding": "DB",
           "database_name": "kfz-bewertung-dev",
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "c3be9323-d6be-41b1-bdf9-2f7911e74bc5",
           "migrations_dir": "migrations"
         }
       ],
@@ -77,8 +77,8 @@
         {
           "binding": "DB",
           "database_name": "kfz-bewertung-vorschau",
-          // Platzhalter; echte ID nach `wrangler d1 create kfz-bewertung-vorschau` eintragen (kein Geheimnis).
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          // Aus `npm run einrichten` (kein Geheimnis).
+          "database_id": "91c508eb-325b-4b8e-ad35-5a602ea8bbd5",
           "migrations_dir": "migrations"
         }
       ],

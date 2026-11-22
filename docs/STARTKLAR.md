@@ -158,21 +158,23 @@ Erwartet: `live`.
 
 ## 10. Erster Start: Autopilot aus, dann an
 
-`ablauf.autopilot` ist der Not-Aus und wird bei jedem Versand geprüft. Beim ersten Start
-**aus** lassen:
+`ablauf.autopilot` ist der Not-Aus und wird bei jedem Versand geprüft. Werte: `an`,
+`nur_verarbeiten` (bewerten, nichts senden), `aus` (Eingänge annehmen und parken). Der
+Standard ist `an` — vor dem ersten echten Kunden im Admin auf `nur_verarbeiten` stellen:
 
 ```powershell
 npm run rauchtest -- https://<worker-adresse>
 (Invoke-RestMethod "https://<worker-adresse>/api/gesund").autopilot
 ```
 
-Erwartet: „Rauchtest bestanden.“ und `autopilot` = `False`. Dann eine Testanfrage über
+Erwartet: „Rauchtest bestanden.“ und `autopilot` = `nur_verarbeiten`. In Produktion besteht
+der Rauchtest erst, wenn `quelleModus` = `live` ist (Schritt 9). Dann eine Testanfrage über
 `/formular` stellen und den Weg im Admin verfolgen (Eingang, Bewertung, Freigabe).
 Nachrichten ohne Preis dürfen automatisch raus, alles mit Preis erst nach Freigabe. Läuft das
-sauber, im Admin `ablauf.autopilot` auf `true` setzen und erneut prüfen:
+sauber, im Admin `ablauf.autopilot` auf `an` setzen und erneut prüfen:
 
 ```powershell
 (Invoke-RestMethod "https://<worker-adresse>/api/gesund").autopilot
 ```
 
-Erwartet: `True`. Notbremse jederzeit: wieder auf `false` (siehe [BETRIEB.md](BETRIEB.md) §3).
+Erwartet: `an`. Notbremse jederzeit: wieder auf `aus` (siehe [BETRIEB.md](BETRIEB.md) §3).

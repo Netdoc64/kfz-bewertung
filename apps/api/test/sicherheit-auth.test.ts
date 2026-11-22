@@ -76,8 +76,10 @@ describe("A02 Broken Authentication: Access-JWT", () => {
 
   it("Produktion ohne Access-Konfiguration verweigert den Admin-Bereich (fail closed), ohne Interna zu nennen", async () => {
     const r = await admin("/api/admin/geraete", await token(), { ...prod, ACCESS_TEAM_DOMAIN: "", ACCESS_AUD: "" });
-    expect(r.status).toBe(500);
-    expect(JSON.stringify(await r.json())).not.toContain("ACCESS_");
+    expect(r.status).toBe(503);
+    const body = JSON.stringify(await r.json());
+    expect(body).toContain("ZUGANG_NICHT_KONFIGURIERT");
+    expect(body).not.toContain("ACCESS_");
   });
 
   it("jede Admin-Route verlangt in Produktion ein Token (BFLA/Inventar)", async () => {

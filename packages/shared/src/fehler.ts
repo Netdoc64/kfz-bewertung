@@ -30,6 +30,7 @@ export const FEHLER = {
   NICHT_GEFUNDEN: { status: 404, schwere: "info", wiederholbar: false, text: "Nicht gefunden." },
   SIGNATUR_UNGUELTIG: { status: 401, schwere: "warnung", wiederholbar: false, text: "Signatur der Anfrage ist ungültig." },
   ZEITSTEMPEL_ABGELAUFEN: { status: 401, schwere: "warnung", wiederholbar: false, text: "Der Zeitstempel der Anfrage liegt außerhalb der erlaubten Toleranz." },
+  ZUGANG_NICHT_KONFIGURIERT: { status: 503, schwere: "fehler", wiederholbar: true, text: "Der Admin-Zugang ist noch nicht eingerichtet." },
   WEBHOOK_NICHT_KONFIGURIERT: { status: 503, schwere: "fehler", wiederholbar: true, text: "Der Webhook-Eingang ist nicht eingerichtet." },
 
   BOT_SCHUTZ_ABGELEHNT: { status: 403, schwere: "info", wiederholbar: true, text: "Die Bot-Prüfung wurde nicht bestanden. Bitte die Seite neu laden und erneut versuchen." },
