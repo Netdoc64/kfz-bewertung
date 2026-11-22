@@ -108,7 +108,7 @@ describe("Einstellungen", () => {
 describe("Admin-Zugang in Produktion", () => {
   it("verweigert ohne Access-Konfiguration", async () => {
     const r = await app.request(`${BASIS}/api/admin/einstellungen`, undefined, { ...env, UMGEBUNG: "produktion" });
-    expect(r.status).toBe(500);
+    expect(r.status).toBe(503);
   });
 
   it("verweigert ohne Access-Token", async () => {

@@ -57,7 +57,7 @@ describe("Admin-Web als Assets hinter Access", () => {
   it("Produktion ohne Access-Konfiguration verweigert die Seite (fail closed)", async () => {
     angefragt.length = 0;
     const r = await rufe("/", await token(), { ...prod, ACCESS_TEAM_DOMAIN: "", ACCESS_AUD: "" });
-    expect(r.status).toBe(500);
+    expect(r.status).toBe(503);
     expect(angefragt).toEqual([]);
   });
 

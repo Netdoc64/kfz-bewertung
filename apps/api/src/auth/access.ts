@@ -29,7 +29,7 @@ export const adminPflicht: MiddlewareHandler<AppUmgebung> = async (c, next) => {
   const team = c.env.ACCESS_TEAM_DOMAIN;
   const aud = c.env.ACCESS_AUD;
   if (!team || !aud) {
-    throw new AppFehler("INTERN", "Cloudflare Access ist nicht konfiguriert (ACCESS_TEAM_DOMAIN/ACCESS_AUD)");
+    throw new AppFehler("ZUGANG_NICHT_KONFIGURIERT", "Cloudflare Access ist nicht konfiguriert (ACCESS_TEAM_DOMAIN/ACCESS_AUD)");
   }
   const token = c.req.header("Cf-Access-Jwt-Assertion");
   if (!token) throw new AppFehler("NICHT_ANGEMELDET");

@@ -76,7 +76,8 @@ export async function rauchtest(url, optionen = {}) {
     const abdruck = istObjekt(g.einstellungen) ? g.einstellungen.abdruck : undefined;
     if (typeof abdruck === "string" && abdruck.length > 0) gut(`Einstellungs-Abdruck ${abdruck}`);
     else fehler("Einstellungs-Abdruck fehlt");
-    if (typeof g.autopilot === "boolean") gut(`Autopilot ${g.autopilot ? "an" : "aus"}`);
+    // Werte wie in der Registry (`ablauf.autopilot`).
+    if (["an", "nur_verarbeiten", "aus"].includes(g.autopilot)) gut(`Autopilot ${g.autopilot}`);
     else fehler("Autopilot-Zustand nicht gemeldet");
     if (typeof g.quelleModus === "string" && g.quelleModus) {
       if (g.umgebung === "produktion" && g.quelleModus === "mock") {

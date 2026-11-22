@@ -9,7 +9,7 @@ const gesundAntwort = {
   d1: "ok",
   queue: "bereit",
   einstellungen: { abdruck: "abc123def456", gespeicherteSchluessel: 3 },
-  autopilot: true,
+  autopilot: "an",
   quelleModus: "live",
 };
 
@@ -42,6 +42,12 @@ describe("rauchtest", () => {
     });
     expect(r.ok).toBe(false);
     expect(r.befunde.filter((b) => b.stufe === "fehler").length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("scheitert bei Autopilot als Wahrheitswert statt Registry-Wert", async () => {
+    const r = await rauchtest("https://x.example", { fetch: attrappe({ ...gesundAntwort, autopilot: true }) });
+    expect(r.ok).toBe(false);
+    expect(r.befunde.some((b) => b.text.includes("Autopilot"))).toBe(true);
   });
 
   it("scheitert bei falscher Antwortform", async () => {
