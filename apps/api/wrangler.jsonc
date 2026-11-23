@@ -33,8 +33,9 @@
   // die Access-Prüfung ist an, und ohne ACCESS_* verweigert der Admin-Bereich.
   "vars": {
     "UMGEBUNG": "produktion",
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": ""
+    // Access-App „kfz Admin“ (Zero Trust). Beides keine Geheimnisse.
+    "ACCESS_TEAM_DOMAIN": "vardiflowers.cloudflareaccess.com",
+    "ACCESS_AUD": "5e9b791a9ef2a2b4078293f4ba4b6ee0519f29bf3e7174798d08467e0193d6d2"
   },
   "env": {
     // Nur lokal (`npm run dev`, Tests). Überspringt die Access-Prüfung.
