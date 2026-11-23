@@ -75,9 +75,13 @@ describe("lauf", () => {
 describe("echtes wrangler.jsonc", () => {
   const text = readFileSync(echteUrl, "utf8");
 
-  it("ist für Produktion gesperrt, solange Platzhalter drinstehen", () => {
-    expect(pruefeText(text, "produktion").length).toBeGreaterThan(0);
-    expect(lauf(["produktion", fileURLToPath(echteUrl)], mitSammler().ausgabe)).toBe(1);
+  it("ist für Produktion frei: echte D1-ID und Access-Werte stehen drin", () => {
+    expect(pruefeText(text, "produktion")).toEqual([]);
+    expect(lauf(["produktion", fileURLToPath(echteUrl)], mitSammler().ausgabe)).toBe(0);
+  });
+
+  it("sperrt die Vorschau, solange dort die Access-Werte fehlen", () => {
+    expect(pruefeText(text, "vorschau").join("|")).toContain("ACCESS_");
   });
 
   it("lässt entwicklung durch", () => {
