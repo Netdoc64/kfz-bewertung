@@ -1,6 +1,8 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "kfz-bewertung-api",
+  // VardiFlowers-Cloudflare-Konto (kein Geheimnis); damit braucht der Deploy nur das Token.
+  "account_id": "a8ab6057e5dd95df1998fff2f5c1c955",
   "main": "src/index.ts",
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat"],

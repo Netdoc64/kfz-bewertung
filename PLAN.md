@@ -217,7 +217,7 @@ Fehlerfälle haben einen Code im Katalog, PLAN.md ist nachgezogen.
 
 ### Phase 9 — Startklar
 
-- [x] Deploy-Workflow `.github/workflows/deploy.yml`: nach grünem `test` auf `main` erst `wrangler d1 migrations apply --remote`, dann `wrangler deploy`; ohne Secret `CLOUDFLARE_API_TOKEN` überspringt er sauber mit Hinweis; manueller Start für die Vorschau-Umgebung
+- [x] Deploy-Workflow `.github/workflows/deploy.yml`: nach grünem `test` auf `main` erst `wrangler d1 migrations apply --remote`, dann `wrangler deploy`; ohne Secret `KFZ_CF_API_TOKEN` überspringt er sauber mit Hinweis; manueller Start für die Vorschau-Umgebung
 - [x] `npm run einrichten`: legt D1, Queues und R2 je Umgebung idempotent über wrangler an und gibt die IDs aus; Test mit wrangler-Attrappe
 - [x] Sperre gegen Platzhalter: Deploy bricht ab, solange in `wrangler.jsonc` eine Null-ID oder leere `ACCESS_*`-Werte für Produktion stehen; Test
 - [x] Produktions-Sperre: bei `UMGEBUNG=produktion` und `quelle.mobilede.modus=mock` entsteht kein Preis — Anfrage geht mit Grund an `an_mensch`, Admin zeigt einen Hinweis „keine Live-Daten“; Test

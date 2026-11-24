@@ -40,7 +40,7 @@ Wichtig:
 - Normalerweise deployt [`deploy.yml`](../.github/workflows/deploy.yml): nach grünem `test` auf
   `main` Platzhalter-Sperre, `wrangler d1 migrations apply --remote`, `wrangler deploy`,
   Rauchtest; manuell (Vorschau oder Produktion) per `workflow_dispatch`. Ohne Secret
-  `CLOUDFLARE_API_TOKEN` überspringt er alles mit Hinweis. Ersteinrichtung:
+  `KFZ_CF_API_TOKEN` überspringt er alles mit Hinweis. Ersteinrichtung:
   [STARTKLAR.md](STARTKLAR.md).
 - Gesundheitsprüfung nach dem Deploy: `GET /api/gesund` (D1, Queue, Registry-Abdruck,
   `autopilot`, `quelleModus`, ohne Personendaten) bzw. `npm run rauchtest -- <url>`.
