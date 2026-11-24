@@ -44,8 +44,9 @@ describe("deploy.yml", () => {
   it("hat nur lesende Rechte, Concurrency je Umgebung und nur Secret-Namen", () => {
     expect(text).toMatch(/permissions:\s+contents: read/);
     expect(text).toMatch(/concurrency:\s+group: deploy-\$\{\{ github\.event\.inputs\.umgebung/);
-    expect(text).toContain("secrets.CLOUDFLARE_API_TOKEN");
-    expect(text).toContain("secrets.CLOUDFLARE_ACCOUNT_ID");
+    // Eigener Name: CLOUDFLARE_API_TOKEN führt im Business Manager schon VardiFlowers.
+    expect(text).toContain("secrets.KFZ_CF_API_TOKEN");
+    expect(text).not.toContain("secrets.CLOUDFLARE_");
     expect(text).not.toMatch(/CLOUDFLARE_API_TOKEN:\s+[^$\s]/);
   });
 

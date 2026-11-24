@@ -117,12 +117,12 @@ Im Repository unter Settings → Secrets and variables → Actions:
 
 | Art | Name | Inhalt |
 |---|---|---|
-| Secret | `CLOUDFLARE_API_TOKEN` | Token aus Schritt 1 |
-| Secret | `CLOUDFLARE_ACCOUNT_ID` | Account-ID aus `wrangler whoami` |
+| Secret | `KFZ_CF_API_TOKEN` | Token aus Schritt 1, verteilt über den Business Manager (Mandant `kfz-ankauf`) |
 | Variable | `RAUCHTEST_URL_PRODUKTION` | Worker-Adresse Produktion |
 | Variable | `RAUCHTEST_URL_VORSCHAU` | Worker-Adresse Vorschau |
 
-Fehlt `CLOUDFLARE_API_TOKEN`, überspringt der Deploy-Workflow alles mit Hinweis und bleibt
+Die Konto-ID steht als `account_id` in `apps/api/wrangler.jsonc` (kein Geheimnis). Fehlt
+`KFZ_CF_API_TOKEN`, überspringt der Deploy-Workflow alles mit Hinweis und bleibt
 grün. Fehlt die Rauchtest-Variable, entfällt nur der Rauchtest.
 
 ```powershell

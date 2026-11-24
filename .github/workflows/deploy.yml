@@ -1,7 +1,9 @@
 name: Deploy
 
 # Läuft nach grünem CI-Job `test` auf main (Produktion) oder manuell (Standard: Vorschau).
-# Fehlt das Secret CLOUDFLARE_API_TOKEN, überspringt der Lauf alles mit Hinweis und bleibt grün.
+# Fehlt das Secret KFZ_CF_API_TOKEN, überspringt der Lauf alles mit Hinweis und bleibt grün.
+# Eigener Name, weil CLOUDFLARE_API_TOKEN im Business Manager schon VardiFlowers gehört.
+# Die Konto-ID steht in apps/api/wrangler.jsonc (account_id).
 on:
   workflow_run:
     workflows: [CI]
@@ -30,8 +32,7 @@ jobs:
     timeout-minutes: 15
     env:
       UMGEBUNG: ${{ github.event.inputs.umgebung || 'produktion' }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.KFZ_CF_API_TOKEN }}
       RAUCHTEST_URL_VORSCHAU: ${{ vars.RAUCHTEST_URL_VORSCHAU }}
       RAUCHTEST_URL_PRODUKTION: ${{ vars.RAUCHTEST_URL_PRODUKTION }}
       WRANGLER_SEND_METRICS: "false"
@@ -40,7 +41,7 @@ jobs:
         id: token
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "::notice::Secret CLOUDFLARE_API_TOKEN ist nicht gesetzt - Deploy übersprungen."
+            echo "::notice::Secret KFZ_CF_API_TOKEN ist nicht gesetzt - Deploy übersprungen."
             echo "gesetzt=false" >> "$GITHUB_OUTPUT"
           else
             echo "gesetzt=true" >> "$GITHUB_OUTPUT"
